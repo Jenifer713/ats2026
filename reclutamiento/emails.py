@@ -29,8 +29,7 @@ def _send(subject, to_email, html_content, attachments=None):
         if attachments:
             for filename, content, mimetype in attachments:
                 msg.attach(filename, content, mimetype)
-        msg.get_connection(fail_silently=True)
-        msg.send(fail_silently=True)
+        msg.send(fail_silently=False)
         logger.info(f"Correo enviado a {to_email}: {subject}")
         return True
     except Exception as e:
@@ -41,11 +40,12 @@ def _send(subject, to_email, html_content, attachments=None):
 def _send_async(subject, to_email, html_content, attachments=None):
     """Envía el correo en un hilo separado para no bloquear la request."""
     import threading
-    t = threading.Thread(
-        target=_send,
-        args=(subject, to_email, html_content, attachments),
-        daemon=True
-    )
+    def _run():
+        try:
+            _send(subject, to_email, html_content, attachments)
+        except Exception as e:
+            logger.error(f"Error en hilo de correo a {to_email}: {e}")
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
 
 

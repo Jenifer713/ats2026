@@ -33,6 +33,7 @@ def rol_requerido(*roles):
     """
     Decorador que restringe el acceso a vistas según el rol del usuario.
     Los superusuarios siempre tienen acceso total.
+    Los candidatos siempre son redirigidos a sus postulaciones.
     Uso: @rol_requerido('admin') o @rol_requerido('admin', 'reclutador')
     """
     def decorator(view_func):
@@ -42,6 +43,10 @@ def rol_requerido(*roles):
                 return view_func(request, *args, **kwargs)
             try:
                 perfil = request.user.perfil
+                # Candidatos no acceden a vistas internas del ATS
+                if perfil.rol == 'candidato':
+                    messages.warning(request, 'No tienes acceso a esa sección.')
+                    return redirect('mis_postulaciones')
                 if perfil.rol in roles:
                     return view_func(request, *args, **kwargs)
             except PerfilUsuario.DoesNotExist:
@@ -50,6 +55,20 @@ def rol_requerido(*roles):
             return redirect('dashboard')
         return wrapper
     return decorator
+
+
+def solo_no_candidato(view_func):
+    """
+    Decorador para vistas que cualquier usuario autenticado puede ver,
+    excepto candidatos (que son redirigidos a sus postulaciones).
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.user.is_authenticated and get_rol_usuario(request.user) == 'candidato':
+            messages.warning(request, 'No tienes acceso a esa sección.')
+            return redirect('mis_postulaciones')
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 
 def get_rol_usuario(user):
@@ -164,7 +183,12 @@ def dashboard(request):
     """
     Vista principal del dashboard con métricas y gráficos del ATS.
     Si no hay reclutadores ni vacantes, muestra pantalla de onboarding.
+    Los candidatos son redirigidos a su vista de postulaciones.
     """
+    # Candidatos no tienen acceso al dashboard del ATS
+    if get_rol_usuario(request.user) == 'candidato':
+        return redirect('mis_postulaciones')
+
     hoy = date.today()
 
     # ─── Onboarding: detectar si el sistema está recién instalado ───
@@ -246,6 +270,7 @@ def dashboard(request):
 # CRUD RECLUTADORES
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_reclutadores(request):
     """Lista todos los reclutadores con búsqueda y paginación."""
     query = request.GET.get('q', '')
@@ -328,6 +353,7 @@ def eliminar_reclutador(request, pk):
 # CRUD VACANTES
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_vacantes(request):
     """Lista vacantes con búsqueda, filtro por estado y paginación."""
     from datetime import date as _date
@@ -412,6 +438,7 @@ def eliminar_vacante(request, pk):
 
 
 @login_required
+@solo_no_candidato
 def detalle_vacante(request, pk):
     """Detalle de una vacante con sus candidatos y estadísticas."""
     vacante = get_object_or_404(Vacante, pk=pk)
@@ -432,6 +459,7 @@ def detalle_vacante(request, pk):
 # CRUD CANDIDATOS
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_candidatos(request):
     """Lista candidatos con búsqueda, filtro por etapa y paginación."""
     query = request.GET.get('q', '')
@@ -517,6 +545,7 @@ def eliminar_candidato(request, pk):
 
 
 @login_required
+@solo_no_candidato
 def detalle_candidato(request, pk):
     """Detalle completo de un candidato: entrevistas, evaluaciones y ofertas."""
     candidato = get_object_or_404(Candidato, pk=pk)
@@ -533,6 +562,7 @@ def detalle_candidato(request, pk):
 # CRUD ENTREVISTAS
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_entrevistas(request):
     """Lista entrevistas con búsqueda y paginación."""
     query = request.GET.get('q', '')
@@ -552,6 +582,7 @@ def lista_entrevistas(request):
 
 
 @login_required
+@solo_no_candidato
 def crear_entrevista(request):
     """Crea una nueva entrevista. Bloquea fechas pasadas al crear."""
     if request.method == 'POST':
@@ -577,6 +608,7 @@ def crear_entrevista(request):
 
 
 @login_required
+@solo_no_candidato
 def editar_entrevista(request, pk):
     """Edita una entrevista existente. No valida fecha pasada en edición."""
     entrevista = get_object_or_404(Entrevista, pk=pk)
@@ -595,6 +627,7 @@ def editar_entrevista(request, pk):
 
 
 @login_required
+@solo_no_candidato
 def eliminar_entrevista(request, pk):
     """Elimina una entrevista previa confirmación."""
     entrevista = get_object_or_404(Entrevista, pk=pk)
@@ -611,6 +644,7 @@ def eliminar_entrevista(request, pk):
 # CRUD EVALUACIONES
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_evaluaciones(request):
     """Lista evaluaciones con búsqueda y paginación."""
     query = request.GET.get('q', '')
@@ -630,6 +664,7 @@ def lista_evaluaciones(request):
 
 
 @login_required
+@solo_no_candidato
 def crear_evaluacion(request):
     """Crea una nueva evaluación."""
     if request.method == 'POST':
@@ -650,6 +685,7 @@ def crear_evaluacion(request):
 
 
 @login_required
+@solo_no_candidato
 def editar_evaluacion(request, pk):
     """Edita una evaluación existente."""
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
@@ -668,6 +704,7 @@ def editar_evaluacion(request, pk):
 
 
 @login_required
+@solo_no_candidato
 def eliminar_evaluacion(request, pk):
     """Elimina una evaluación previa confirmación."""
     evaluacion = get_object_or_404(Evaluacion, pk=pk)
@@ -684,6 +721,7 @@ def eliminar_evaluacion(request, pk):
 # CRUD OFERTAS
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def lista_ofertas(request):
     """Lista ofertas con búsqueda y paginación."""
     query = request.GET.get('q', '')
@@ -703,6 +741,7 @@ def lista_ofertas(request):
 
 
 @login_required
+@solo_no_candidato
 def crear_oferta(request):
     """Crea una nueva oferta laboral."""
     if request.method == 'POST':
@@ -718,6 +757,7 @@ def crear_oferta(request):
 
 
 @login_required
+@solo_no_candidato
 def editar_oferta(request, pk):
     """Edita una oferta existente."""
     oferta = get_object_or_404(Oferta, pk=pk)
@@ -736,6 +776,7 @@ def editar_oferta(request, pk):
 
 
 @login_required
+@solo_no_candidato
 def eliminar_oferta(request, pk):
     """Elimina una oferta previa confirmación."""
     oferta = get_object_or_404(Oferta, pk=pk)
@@ -752,6 +793,7 @@ def eliminar_oferta(request, pk):
 # CALENDARIO - FullCalendar (AJAX endpoints)
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def calendario(request):
     """Renderiza la vista del calendario de entrevistas con FullCalendar."""
     form = EntrevistaForm(es_creacion=True)
@@ -759,6 +801,7 @@ def calendario(request):
 
 
 @login_required
+@solo_no_candidato
 def entrevistas_json(request):
     """Devuelve todas las entrevistas en formato JSON para FullCalendar."""
     entrevistas = Entrevista.objects.select_related('candidato', 'reclutador').all()
@@ -817,6 +860,7 @@ def eliminar_entrevista_ajax(request, pk):
 # PIPELINE - jQuery UI Drag & Drop
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def pipeline(request):
     """Vista del pipeline Kanban con arrastrar y soltar por etapas."""
     etapas = [
@@ -880,6 +924,7 @@ def actualizar_etapa_candidato(request):
 # REPORTES
 # ═══════════════════════════════════════════════════════════════
 @login_required
+@solo_no_candidato
 def reportes(request):
     """Dashboard de reportes: Time-to-Hire, fuentes, departamentos, contrataciones."""
     hoy = date.today()
