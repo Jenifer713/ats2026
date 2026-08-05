@@ -9,6 +9,7 @@ urlpatterns = [
 
     # ─── Landing pública / Dashboard ───
     path('', views.inicio, name='inicio'),
+    path('registro/', views.registro_publico, name='registro'),
 
     path('dashboard/', views.dashboard, name='dashboard'),
     path('reclutadores/', views.lista_reclutadores, name='lista_reclutadores'),
@@ -61,6 +62,7 @@ urlpatterns = [
 
     # ─── Reportes ───
     path('reportes/', views.reportes, name='reportes'),
+    path('reportes/compartir/', views.compartir_reporte, name='compartir_reporte'),
 
     # ─── Usuarios y Roles (solo admin) ───
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
@@ -71,4 +73,7 @@ urlpatterns = [
 
     # ─── Mi Perfil (todos los usuarios) ───
     path('mi-perfil/', views.mi_perfil, name='mi_perfil'),
+
+    # ─── Compartir (correo) ───
+    path('candidatos/<int:pk>/compartir/', views.compartir_candidato, name='compartir_candidato'),
 ]

@@ -7,14 +7,16 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from reclutamiento import views as rec_views
 
 urlpatterns = [
     # Panel de administración de Django
     path('admin/', admin.site.urls),
 
-    # Autenticación: login y logout
+    # Autenticación: login, logout y registro público
     path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('registro/', rec_views.registro_publico, name='registro'),
 
     # URLs de la aplicación de reclutamiento
     path('', include('reclutamiento.urls')),

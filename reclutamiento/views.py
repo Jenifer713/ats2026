@@ -22,6 +22,10 @@ from .forms import (
     ReclutadorForm, VacanteForm, CandidatoForm,
     EntrevistaForm, EvaluacionForm, OfertaForm
 )
+from .emails import (
+    enviar_bienvenida, enviar_candidato_aceptado, enviar_candidato_rechazado,
+    enviar_notificacion_entrevista, enviar_reporte_compartido
+)
 
 
 # ─── Decoradores de roles ───────────────────────────────────────
@@ -70,6 +74,73 @@ def inicio(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, 'landing.html')
+
+
+def registro_publico(request):
+    """Registro público de nuevos usuarios (candidatos)."""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        username   = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name  = request.POST.get('last_name', '').strip()
+        email      = request.POST.get('email', '').strip().lower()
+        password1  = request.POST.get('password1', '')
+        password2  = request.POST.get('password2', '')
+
+        # Validaciones
+        error = None
+        if not all([username, first_name, last_name, email, password1, password2]):
+            error = 'Todos los campos son obligatorios.'
+        elif len(first_name) < 2 or len(last_name) < 2:
+            error = 'Nombres y apellidos deben tener al menos 2 caracteres.'
+        elif len(username) < 3:
+            error = 'El nombre de usuario debe tener al menos 3 caracteres.'
+        elif User.objects.filter(username=username).exists():
+            error = f'El usuario "{username}" ya está en uso. Elige otro.'
+        elif User.objects.filter(email=email).exists():
+            error = 'Ya existe una cuenta con ese correo electrónico.'
+        elif password1 != password2:
+            error = 'Las contraseñas no coinciden.'
+        elif len(password1) < 8:
+            error = 'La contraseña debe tener al menos 8 caracteres.'
+        else:
+            import re
+            if not re.match(r'^[a-zA-Z0-9_.@+-]+$', username):
+                error = 'Usuario inválido. Solo letras, números y @/./+/-/_'
+
+        if error:
+            return render(request, 'login.html', {
+                'modo': 'registro',
+                'registro_error': error,
+                'reg_data': {
+                    'username': username, 'first_name': first_name,
+                    'last_name': last_name, 'email': email,
+                }
+            })
+
+        # Crear usuario
+        user = User.objects.create_user(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password1,
+        )
+        PerfilUsuario.objects.create(user=user, rol='coordinador')
+
+        # Enviar correo de bienvenida
+        enviar_bienvenida(user)
+
+        messages.success(
+            request,
+            f'¡Cuenta creada exitosamente! Bienvenido/a {first_name}. '
+            'Revisa tu correo para ver la confirmación.'
+        )
+        return redirect('/login/')
+
+    return render(request, 'login.html', {'modo': 'registro'})
 
 
 
@@ -395,10 +466,21 @@ def crear_candidato(request):
 def editar_candidato(request, pk):
     """Edita un candidato existente."""
     candidato = get_object_or_404(Candidato, pk=pk)
+    etapa_anterior = candidato.etapa_actual
     if request.method == 'POST':
         form = CandidatoForm(request.POST, request.FILES, instance=candidato)
         if form.is_valid():
-            form.save()
+            candidato_actualizado = form.save()
+            nueva_etapa = candidato_actualizado.etapa_actual
+            # Enviar correo si cambia a contratado o rechazado
+            if etapa_anterior != nueva_etapa:
+                try:
+                    if nueva_etapa == 'contratado':
+                        enviar_candidato_aceptado(candidato_actualizado)
+                    elif nueva_etapa == 'rechazado':
+                        enviar_candidato_rechazado(candidato_actualizado)
+                except Exception:
+                    pass
             messages.success(request, 'Candidato actualizado correctamente.')
             return redirect('lista_candidatos')
         messages.error(request, 'Por favor corrige los errores del formulario.')
@@ -464,7 +546,12 @@ def crear_entrevista(request):
     if request.method == 'POST':
         form = EntrevistaForm(request.POST, es_creacion=True)
         if form.is_valid():
-            form.save()
+            entrevista = form.save()
+            # Notificar al candidato por correo
+            try:
+                enviar_notificacion_entrevista(entrevista.candidato, entrevista)
+            except Exception:
+                pass
             messages.success(request, 'Entrevista programada exitosamente.')
             return redirect('lista_entrevistas')
         messages.error(request, 'Por favor corrige los errores del formulario.')
@@ -759,8 +846,18 @@ def actualizar_etapa_candidato(request):
         return JsonResponse({'status': 'error', 'mensaje': 'Datos inválidos'}, status=400)
 
     candidato = get_object_or_404(Candidato, pk=candidato_id)
+    etapa_anterior = candidato.etapa_actual
     candidato.etapa_actual = nueva_etapa
     candidato.save()
+    # Enviar correo si cambia a contratado o rechazado
+    if etapa_anterior != nueva_etapa:
+        try:
+            if nueva_etapa == 'contratado':
+                enviar_candidato_aceptado(candidato)
+            elif nueva_etapa == 'rechazado':
+                enviar_candidato_rechazado(candidato)
+        except Exception:
+            pass
     return JsonResponse({
         'status': 'ok',
         'candidato': candidato.nombre_completo,
@@ -839,6 +936,68 @@ def reportes(request):
         'total_entrevistas': Entrevista.objects.count(),
     }
     return render(request, 'reportes.html', context)
+
+
+# ═══════════════════════════════════════════════════════════════
+# COMPARTIR REPORTE POR CORREO
+# ═══════════════════════════════════════════════════════════════
+@login_required
+@require_POST
+def compartir_reporte(request):
+    """Envía el resumen del reporte al correo indicado."""
+    destinatario = request.POST.get('email_destinatario', '').strip()
+    tipo = request.POST.get('tipo_reporte', 'Reporte ATS')
+    remitente = request.user.get_full_name() or request.user.username
+
+    if not destinatario:
+        messages.error(request, 'Debes ingresar un correo destinatario.')
+        return redirect('reportes')
+
+    import re
+    if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', destinatario):
+        messages.error(request, 'El correo ingresado no es válido.')
+        return redirect('reportes')
+
+    # Construir resumen HTML del reporte
+    from datetime import date
+    hoy = date.today()
+    total_contratados = Candidato.objects.filter(etapa_actual='contratado').count()
+    total_entrevistas = Entrevista.objects.count()
+    vacantes_abiertas = Vacante.objects.filter(estado='abierta').count()
+    total_candidatos  = Candidato.objects.count()
+
+    contenido_html = f"""
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+      <tr style="background:#f8f9fa;">
+        <td style="padding:8px 12px;font-weight:600;color:#374151;">Métrica</td>
+        <td style="padding:8px 12px;font-weight:600;color:#374151;text-align:right;">Valor</td>
+      </tr>
+      <tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;">Candidatos totales</td>
+          <td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:right;font-weight:700;">{total_candidatos}</td></tr>
+      <tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;">Contratados</td>
+          <td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:right;font-weight:700;color:#16a34a;">{total_contratados}</td></tr>
+      <tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;">Vacantes abiertas</td>
+          <td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:right;font-weight:700;color:#0d6efd;">{vacantes_abiertas}</td></tr>
+      <tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;">Entrevistas realizadas</td>
+          <td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:right;font-weight:700;">{total_entrevistas}</td></tr>
+    </table>
+    <p style="font-size:.75rem;color:#9ca3af;margin-top:12px;">Generado el {hoy.strftime('%d/%m/%Y')}</p>
+    """
+
+    ok = enviar_reporte_compartido(
+        destinatario_email=destinatario,
+        destinatario_nombre=destinatario,
+        remitente_nombre=remitente,
+        tipo_reporte=tipo,
+        contenido_html=contenido_html,
+    )
+
+    if ok:
+        messages.success(request, f'Reporte enviado exitosamente a {destinatario}.')
+    else:
+        messages.error(request, 'No se pudo enviar el correo. Verifica la configuración SMTP.')
+
+    return redirect('reportes')
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -1030,3 +1189,61 @@ def mi_perfil(request):
         'perfil': perfil,
         'rol_display': rol_display,
     })
+
+
+# ═══════════════════════════════════════════════════════════════
+# COMPARTIR CANDIDATO POR CORREO
+# ═══════════════════════════════════════════════════════════════
+@login_required
+@require_POST
+def compartir_candidato(request, pk):
+    """Envía el perfil de un candidato por correo electrónico."""
+    candidato = get_object_or_404(Candidato, pk=pk)
+    destinatario = request.POST.get('email_destinatario', '').strip()
+    mensaje_extra = request.POST.get('mensaje', '').strip()
+    remitente = request.user.get_full_name() or request.user.username
+
+    import re
+    if not destinatario or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', destinatario):
+        messages.error(request, 'Correo destinatario inválido.')
+        return redirect('detalle_candidato', pk=pk)
+
+    from django.conf import settings as django_settings
+    site_url = getattr(django_settings, 'SITE_URL', 'https://ats2026.onrender.com')
+
+    contenido_html = f"""
+    <p style="color:#4b5563;margin:0 0 16px;">
+      <strong>{remitente}</strong> ha compartido contigo el perfil de un candidato.
+    </p>
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+      <tr><td style="padding:8px;font-weight:600;color:#374151;width:40%;">Nombre</td>
+          <td style="padding:8px;color:#111;">{candidato.nombre_completo}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:8px;font-weight:600;color:#374151;">Cédula</td>
+          <td style="padding:8px;color:#111;">{candidato.cedula}</td></tr>
+      <tr><td style="padding:8px;font-weight:600;color:#374151;">Correo</td>
+          <td style="padding:8px;color:#111;">{candidato.correo}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:8px;font-weight:600;color:#374151;">Vacante</td>
+          <td style="padding:8px;color:#111;">{candidato.vacante.titulo}</td></tr>
+      <tr><td style="padding:8px;font-weight:600;color:#374151;">Etapa</td>
+          <td style="padding:8px;color:#111;">{candidato.get_etapa_actual_display()}</td></tr>
+    </table>
+    {f'<div style="background:#f0f4ff;border-radius:8px;padding:12px;margin-top:12px;font-size:.85rem;color:#4b5563;">{mensaje_extra}</div>' if mensaje_extra else ''}
+    <div style="text-align:center;margin-top:20px;">
+      <a href="{site_url}/candidatos/{candidato.pk}/" style="background:#0d6efd;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.875rem;">Ver Perfil Completo →</a>
+    </div>
+    """
+
+    ok = enviar_reporte_compartido(
+        destinatario_email=destinatario,
+        destinatario_nombre=destinatario,
+        remitente_nombre=remitente,
+        tipo_reporte=f"Perfil: {candidato.nombre_completo}",
+        contenido_html=contenido_html,
+    )
+
+    if ok:
+        messages.success(request, f'Perfil enviado exitosamente a {destinatario}.')
+    else:
+        messages.error(request, 'No se pudo enviar el correo. Verifica la configuración SMTP.')
+
+    return redirect('detalle_candidato', pk=pk)

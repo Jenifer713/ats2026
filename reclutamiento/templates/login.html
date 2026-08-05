@@ -3,68 +3,426 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar Sesión - ATS Recluta</title>
+  <title>{% if modo == 'registro' %}Crear Cuenta{% else %}Iniciar Sesión{% endif %} - ATS Recluta</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    body { background: linear-gradient(135deg, #1a1d23 0%, #2d3038 50%, #1a1d23 100%); min-height: 100vh; }
-    .login-card { border: none; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
-    .login-header { background: linear-gradient(135deg, #0d6efd, #0a58ca); border-radius: 16px 16px 0 0; }
-    .btn-login { background: linear-gradient(135deg, #0d6efd, #0a58ca); border: none; }
-    .btn-login:hover { background: linear-gradient(135deg, #0a58ca, #084298); }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0;
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d23 40%, #1e2a45 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex; align-items: stretch;
+    }
+
+    /* ── Layout split ── */
+    .auth-wrapper {
+      display: flex; width: 100%; min-height: 100vh;
+    }
+    .auth-left {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; position: relative; overflow: hidden;
+    }
+    .auth-left::before {
+      content: '';
+      position: absolute; top: -30%; left: -20%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(13,110,253,.2) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .auth-left::after {
+      content: '';
+      position: absolute; bottom: -20%; right: -10%;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(25,135,84,.15) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .auth-right {
+      width: 460px; min-width: 460px;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      padding: 2.5rem;
+      box-shadow: -8px 0 40px rgba(0,0,0,.25);
+    }
+
+    /* ── Branding izquierdo ── */
+    .brand-content { position: relative; z-index: 1; max-width: 480px; color: #fff; }
+    .brand-logo {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: linear-gradient(135deg, #0d6efd, #0a58ca);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin-bottom: 1.5rem;
+      box-shadow: 0 8px 32px rgba(13,110,253,.4);
+    }
+    .brand-title { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
+    .brand-title span { color: #60a5fa; }
+    .brand-desc { color: rgba(255,255,255,.65); font-size: .95rem; line-height: 1.7; margin-bottom: 2rem; }
+    .brand-features { list-style: none; padding: 0; margin: 0; }
+    .brand-features li {
+      display: flex; align-items: center; gap: .75rem;
+      color: rgba(255,255,255,.75); font-size: .875rem;
+      margin-bottom: .65rem;
+    }
+    .brand-features li i { color: #34d399; font-size: 1rem; flex-shrink: 0; }
+
+    /* ── Formulario ── */
+    .form-container { width: 100%; max-width: 380px; }
+    .form-title { font-size: 1.5rem; font-weight: 800; color: #111; margin-bottom: .25rem; }
+    .form-subtitle { color: #6b7280; font-size: .875rem; margin-bottom: 1.75rem; }
+
+    .form-control {
+      border: 1.5px solid #e5e7eb; border-radius: 10px !important;
+      padding: .7rem 1rem; font-size: .9rem; transition: all .2s;
+    }
+    .form-control:focus {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+    }
+    .form-control.is-invalid { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+    .form-label { font-size: .8rem; font-weight: 700; color: #374151; margin-bottom: .35rem; letter-spacing: .01em; }
+
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap i {
+      position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+      color: #9ca3af; font-size: .95rem; pointer-events: none;
+    }
+    .input-icon-wrap .form-control { padding-left: 2.5rem; }
+    .input-icon-wrap .toggle-pw {
+      position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
+      color: #9ca3af; cursor: pointer; background: none; border: none; padding: 0;
+      font-size: .95rem; transition: color .2s;
+    }
+    .input-icon-wrap .toggle-pw:hover { color: #0d6efd; }
+    .input-icon-wrap .has-toggle { padding-right: 2.5rem; }
+
+    .btn-auth {
+      background: linear-gradient(135deg, #0d6efd, #0a58ca);
+      border: none; border-radius: 10px; padding: .75rem;
+      font-weight: 700; font-size: .95rem; color: #fff;
+      width: 100%; transition: all .25s;
+      box-shadow: 0 4px 16px rgba(13,110,253,.3);
+    }
+    .btn-auth:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(13,110,253,.4); color: #fff;
+    }
+    .btn-auth:active { transform: translateY(0); }
+    .btn-auth:disabled { opacity: .7; transform: none; }
+
+    .divider { display: flex; align-items: center; gap: 1rem; margin: 1.25rem 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+    .divider span { color: #9ca3af; font-size: .78rem; white-space: nowrap; }
+
+    .switch-link {
+      text-align: center; margin-top: 1.25rem;
+      font-size: .85rem; color: #6b7280;
+    }
+    .switch-link a { color: #0d6efd; font-weight: 600; text-decoration: none; }
+    .switch-link a:hover { text-decoration: underline; }
+
+    .error-box {
+      background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+      padding: .75rem 1rem; font-size: .83rem; color: #b91c1c; margin-bottom: 1rem;
+      display: flex; align-items: flex-start; gap: .5rem;
+    }
+    .success-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+      padding: .75rem 1rem; font-size: .83rem; color: #166534; margin-bottom: 1rem;
+      display: flex; align-items: flex-start; gap: .5rem;
+    }
+
+    .strength-bar { height: 4px; border-radius: 2px; background: #e5e7eb; margin-top: .4rem; overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 2px; transition: all .3s; width: 0; }
+
+    /* ── Tabs login/registro ── */
+    .auth-tabs { display: flex; border-radius: 10px; background: #f3f4f6; padding: 3px; margin-bottom: 1.5rem; }
+    .auth-tab {
+      flex: 1; padding: .55rem; border-radius: 8px; border: none; background: none;
+      font-size: .85rem; font-weight: 600; color: #6b7280; cursor: pointer; transition: all .2s;
+    }
+    .auth-tab.active { background: #fff; color: #0d6efd; box-shadow: 0 1px 6px rgba(0,0,0,.1); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .auth-left { display: none; }
+      .auth-right { width: 100%; min-width: unset; box-shadow: none; padding: 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .auth-right { padding: 1.25rem 1rem; }
+    }
   </style>
 </head>
-<body class="d-flex align-items-center justify-content-center">
+<body>
 
-<div class="container" style="max-width: 420px;">
-  <div class="login-card card">
-    <!-- Header -->
-    <div class="login-header p-4 text-center text-white">
-      <i class="bi bi-people-fill" style="font-size: 2.5rem;"></i>
-      <h4 class="mt-2 mb-0 fw-bold">ATS Recluta</h4>
-      <p class="small opacity-75 mb-0">Sistema de Reclutamiento</p>
+<div class="auth-wrapper">
+  <!-- ── Branding izquierdo (solo desktop) ── -->
+  <div class="auth-left">
+    <div class="brand-content">
+      <div class="brand-logo"><i class="bi bi-people-fill"></i></div>
+      <h1 class="brand-title">
+        Gestiona tu talento<br>con <span>ATS Recluta</span>
+      </h1>
+      <p class="brand-desc">
+        Plataforma integral de reclutamiento y selección de personal. 
+        Desde la publicación de vacantes hasta la contratación.
+      </p>
+      <ul class="brand-features">
+        <li><i class="bi bi-check-circle-fill"></i> Pipeline Kanban con drag &amp; drop</li>
+        <li><i class="bi bi-check-circle-fill"></i> Calendario de entrevistas (FullCalendar)</li>
+        <li><i class="bi bi-check-circle-fill"></i> Calificación rápida por teclado (1-5)</li>
+        <li><i class="bi bi-check-circle-fill"></i> Reportes Time-to-Hire y efectividad</li>
+        <li><i class="bi bi-check-circle-fill"></i> Notificaciones automáticas por correo</li>
+      </ul>
     </div>
+  </div>
 
-    <!-- Body -->
-    <div class="card-body p-4">
-      <h5 class="text-center mb-4 text-muted">Inicia sesión para continuar</h5>
+  <!-- ── Formulario derecho ── -->
+  <div class="auth-right">
+    <div class="form-container">
 
-      {% if form.errors %}
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          Usuario o contraseña incorrectos. Inténtalo nuevamente.
+      <!-- Logo mobile -->
+      <div class="d-flex align-items-center gap-2 mb-3 d-md-none">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#0d6efd,#0a58ca);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <i class="bi bi-people-fill text-white" style="font-size:.9rem;"></i>
         </div>
-      {% endif %}
+        <span style="font-weight:800;font-size:1rem;color:#111;">ATS Recluta</span>
+      </div>
 
-      <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-person me-1"></i> Usuario
-          </label>
-          <input type="text" name="username" class="form-control form-control-lg"
-                 placeholder="Nombre de usuario" autofocus required>
-        </div>
-        <div class="mb-4">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-lock me-1"></i> Contraseña
-          </label>
-          <input type="password" name="password" class="form-control form-control-lg"
-                 placeholder="Contraseña" required>
-        </div>
-        <input type="hidden" name="next" value="{{ next }}">
-        <button type="submit" class="btn btn-login btn-primary btn-lg w-100 text-white fw-semibold">
-          <i class="bi bi-box-arrow-in-right me-2"></i> Ingresar
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab {% if modo != 'registro' %}active{% endif %}" id="tabLogin" onclick="switchTab('login')">
+          <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
         </button>
-      </form>
-    </div>
+        <button class="auth-tab {% if modo == 'registro' %}active{% endif %}" id="tabRegistro" onclick="switchTab('registro')">
+          <i class="bi bi-person-plus me-1"></i>Crear Cuenta
+        </button>
+      </div>
 
-    <div class="card-footer text-center text-muted small py-3 bg-light">
-      <i class="bi bi-shield-check me-1"></i> Acceso protegido — Solo personal autorizado
+      <!-- ═══ LOGIN ═══ -->
+      <div id="panelLogin" {% if modo == 'registro' %}style="display:none"{% endif %}>
+        <p class="form-title">Bienvenido/a</p>
+        <p class="form-subtitle">Ingresa tus credenciales para continuar</p>
+
+        {% if form and form.errors %}
+        <div class="error-box">
+          <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+          <span>Usuario o contraseña incorrectos. Verifica tus datos e inténtalo de nuevo.</span>
+        </div>
+        {% endif %}
+
+        {% if messages %}
+          {% for message in messages %}
+          <div class="{% if message.tags == 'success' %}success-box{% else %}error-box{% endif %}">
+            <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-circle-fill{% endif %} flex-shrink-0"></i>
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+        <form method="post" action="/login/" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+
+          <div class="mb-3">
+            <label class="form-label">USUARIO</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-person"></i>
+              <input type="text" name="username" class="form-control"
+                     placeholder="nombre_usuario" autofocus required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">CONTRASEÑA</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-lock"></i>
+              <input type="password" name="password" id="loginPwd" class="form-control has-toggle"
+                     placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" class="toggle-pw" onclick="togglePwd('loginPwd',this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
+          </button>
+        </form>
+      </div>
+
+      <!-- ═══ REGISTRO ═══ -->
+      <div id="panelRegistro" {% if modo != 'registro' %}style="display:none"{% endif %}>
+        <p class="form-title">Crea tu cuenta</p>
+        <p class="form-subtitle">Regístrate para postularte a vacantes</p>
+
+        {% if registro_error %}
+        <div class="error-box">
+          <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+          <span>{{ registro_error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/registro/" novalidate id="formRegistro">
+          {% csrf_token %}
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label">NOMBRES *</label>
+              <input type="text" name="first_name" class="form-control"
+                     placeholder="Nombres" required minlength="2"
+                     value="{{ reg_data.first_name|default:'' }}">
+              <div class="invalid-feedback">Mínimo 2 caracteres</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label">APELLIDOS *</label>
+              <input type="text" name="last_name" class="form-control"
+                     placeholder="Apellidos" required minlength="2"
+                     value="{{ reg_data.last_name|default:'' }}">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">CORREO ELECTRÓNICO *</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-envelope"></i>
+              <input type="email" name="email" class="form-control"
+                     placeholder="tu@correo.com" required
+                     value="{{ reg_data.email|default:'' }}"
+                     id="regEmail">
+            </div>
+            <div class="invalid-feedback" id="emailFeedback">Ingresa un correo válido</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">USUARIO *</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-at"></i>
+              <input type="text" name="username" class="form-control"
+                     placeholder="nombre_usuario" required minlength="3"
+                     pattern="[a-zA-Z0-9_.@+-]+"
+                     title="Letras, números y @/./+/-/_"
+                     value="{{ reg_data.username|default:'' }}"
+                     id="regUsername">
+            </div>
+            <div class="invalid-feedback">Solo letras, números y @/./+/-/_</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">CONTRASEÑA *</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-lock"></i>
+              <input type="password" name="password1" id="regPwd1" class="form-control has-toggle"
+                     placeholder="Mínimo 8 caracteres" required minlength="8"
+                     oninput="checkStrength(this.value)">
+              <button type="button" class="toggle-pw" onclick="togglePwd('regPwd1',this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+            <div id="strengthText" style="font-size:.72rem;color:#9ca3af;margin-top:.2rem;"></div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">CONFIRMAR CONTRASEÑA *</label>
+            <div class="input-icon-wrap">
+              <i class="bi bi-lock-fill"></i>
+              <input type="password" name="password2" id="regPwd2" class="form-control has-toggle"
+                     placeholder="Repite la contraseña" required
+                     oninput="checkMatch()">
+              <button type="button" class="toggle-pw" onclick="togglePwd('regPwd2',this)">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback" id="matchFeedback">Las contraseñas no coinciden</div>
+          </div>
+
+          <button type="submit" class="btn-auth" id="btnRegistro">
+            <i class="bi bi-person-plus me-2"></i>Crear Cuenta
+          </button>
+
+          <p style="font-size:.72rem;color:#9ca3af;text-align:center;margin-top:.75rem;">
+            Al registrarte aceptas participar en nuestro proceso de selección bajo
+            políticas de igualdad de oportunidades.
+          </p>
+        </form>
+      </div>
+
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('panelLogin').style.display    = isLogin ? '' : 'none';
+  document.getElementById('panelRegistro').style.display = isLogin ? 'none' : '';
+  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('tabRegistro').classList.toggle('active', !isLogin);
+}
+
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  const icon  = btn.querySelector('i');
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  icon.className = isText ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+function checkStrength(val) {
+  const fill = document.getElementById('strengthFill');
+  const text = document.getElementById('strengthText');
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w: '0%',   c: '#e5e7eb', t: '' },
+    { w: '25%',  c: '#ef4444', t: 'Muy débil' },
+    { w: '50%',  c: '#f59e0b', t: 'Débil' },
+    { w: '75%',  c: '#0d6efd', t: 'Buena' },
+    { w: '100%', c: '#16a34a', t: 'Excelente' },
+  ];
+  const l = levels[score];
+  fill.style.width = l.w;
+  fill.style.background = l.c;
+  text.textContent = l.t;
+  text.style.color = l.c;
+}
+
+function checkMatch() {
+  const p1 = document.getElementById('regPwd1').value;
+  const p2 = document.getElementById('regPwd2');
+  const fb = document.getElementById('matchFeedback');
+  if (p2.value && p2.value !== p1) {
+    p2.classList.add('is-invalid');
+    fb.style.display = 'block';
+  } else {
+    p2.classList.remove('is-invalid');
+    fb.style.display = 'none';
+  }
+}
+
+// Validación en tiempo real del correo
+document.getElementById('regEmail') && document.getElementById('regEmail').addEventListener('blur', function() {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!re.test(this.value)) {
+    this.classList.add('is-invalid');
+  } else {
+    this.classList.remove('is-invalid');
+  }
+});
+
+// Validación al enviar
+document.getElementById('formRegistro') && document.getElementById('formRegistro').addEventListener('submit', function(e) {
+  const p1 = document.getElementById('regPwd1').value;
+  const p2 = document.getElementById('regPwd2').value;
+  if (p1 !== p2) {
+    e.preventDefault();
+    document.getElementById('regPwd2').classList.add('is-invalid');
+  }
+});
+</script>
 </body>
 </html>

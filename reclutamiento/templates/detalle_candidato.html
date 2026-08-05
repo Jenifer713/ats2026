@@ -29,9 +29,51 @@
     <a href="{% url 'editar_candidato' candidato.pk %}" class="btn btn-outline-primary btn-sm">
       <i class="bi bi-pencil me-1"></i> Editar
     </a>
+    <!-- Botón compartir -->
+    <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalCompartirCandidato">
+      <i class="bi bi-share me-1"></i> Compartir
+    </button>
     <a href="{% url 'lista_candidatos' %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left me-1"></i> Volver
     </a>
+  </div>
+</div>
+
+<!-- Modal compartir candidato -->
+<div class="modal fade" id="modalCompartirCandidato" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold"><i class="bi bi-share text-success me-2"></i>Compartir Perfil del Candidato</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'compartir_candidato' candidato.pk %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            Se enviará el perfil de <strong>{{ candidato.nombre_completo }}</strong> al correo indicado.
+          </p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Correo destinatario <span class="text-danger">*</span></label>
+            <input type="email" name="email_destinatario" class="form-control"
+                   placeholder="destinatario@correo.com" required
+                   value="{{ candidato.correo }}">
+            <div class="form-text">Por defecto se usa el correo del candidato.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mensaje adicional (opcional)</label>
+            <textarea name="mensaje" class="form-control" rows="2"
+                      placeholder="Notas o información adicional..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-send me-1"></i> Enviar
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
