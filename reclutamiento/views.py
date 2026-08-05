@@ -58,6 +58,20 @@ def get_rol_usuario(user):
         return 'coordinador'  # rol más restrictivo por defecto
 
 
+# ═══════════════════════════════════════════════════════════════
+# LANDING PAGE PÚBLICA
+# ═══════════════════════════════════════════════════════════════
+def inicio(request):
+    """
+    Página de inicio pública.
+    Si el usuario ya está autenticado, redirige al dashboard.
+    Si no, muestra la landing page.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'landing.html')
+
+
 
 
 # ═══════════════════════════════════════════════════════════════

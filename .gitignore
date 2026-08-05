@@ -30,3 +30,6 @@ env/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Archivos con credenciales locales
+usuarios_prueba.txt

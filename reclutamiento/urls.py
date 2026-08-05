@@ -7,10 +7,10 @@ from . import views
 
 urlpatterns = [
 
-    # ─── Dashboard ───
-    path('', views.dashboard, name='dashboard'),
+    # ─── Landing pública / Dashboard ───
+    path('', views.inicio, name='inicio'),
 
-    # ─── Reclutadores ───
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('reclutadores/', views.lista_reclutadores, name='lista_reclutadores'),
     path('reclutadores/nuevo/', views.crear_reclutador, name='crear_reclutador'),
     path('reclutadores/<int:pk>/editar/', views.editar_reclutador, name='editar_reclutador'),
