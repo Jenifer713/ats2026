@@ -6,11 +6,9 @@ y SQLite o PostgreSQL en desarrollo local.
 """
 
 from pathlib import Path
-import os
 import dj_database_url
 from decouple import config
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -22,14 +20,13 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
+# ALLOWED_HOSTS acepta lista separada por comas: "localhost,127.0.0.1,.onrender.com"
+ALLOWED_HOSTS = [h.strip() for h in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',') if h.strip()]
 
-# En producción Render agrega el host automáticamente via variable de entorno
-# Si RENDER=True se incluye el hostname .onrender.com
-if config('RENDER', default=False, cast=bool):
-    RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
-    if RENDER_EXTERNAL_HOSTNAME:
-        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# Render inyecta RENDER_EXTERNAL_HOSTNAME con el dominio exacto del servicio
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME', default='')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # ─────────────────────────────────────────
@@ -43,12 +40,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'reclutamiento',  # App principal del sistema ATS
+    'reclutamiento',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Sirve estáticos en producción
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Debe ir justo después de SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,11 +77,8 @@ WSGI_APPLICATION = 'ats2626.wsgi.application'
 
 
 # ─────────────────────────────────────────
-# BASE DE DATOS (PostgreSQL / SQLite)
+# BASE DE DATOS (PostgreSQL en prod / SQLite en local)
 # ─────────────────────────────────────────
-# dj_database_url lee la variable DATABASE_URL del entorno.
-# En Render: configura DATABASE_URL con la URL de PostgreSQL.
-# En local:  puedes usar postgresql://... o sqlite:///db.sqlite3
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -118,17 +112,17 @@ USE_TZ = True
 
 
 # ─────────────────────────────────────────
-# ARCHIVOS ESTÁTICOS
+# ARCHIVOS ESTÁTICOS (WhiteNoise para producción)
 # ─────────────────────────────────────────
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# WhiteNoise: compresión y cache de estáticos en producción
+# WhiteNoise sirve y comprime estáticos sin necesidad de nginx/CDN
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Archivos de media (hojas de vida)
+# Archivos de media (hojas de vida subidas)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -143,21 +137,21 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 
 # ─────────────────────────────────────────
-# MENSAJES DE DJANGO (Bootstrap)
+# MENSAJES DE DJANGO (etiquetas Bootstrap)
 # ─────────────────────────────────────────
 
 from django.contrib.messages import constants as messages
 MESSAGE_TAGS = {
-    messages.DEBUG: 'secondary',
-    messages.INFO: 'info',
+    messages.DEBUG:   'secondary',
+    messages.INFO:    'info',
     messages.SUCCESS: 'success',
     messages.WARNING: 'warning',
-    messages.ERROR: 'danger',
+    messages.ERROR:   'danger',
 }
 
 
 # ─────────────────────────────────────────
-# SEGURIDAD EN PRODUCCIÓN
+# SEGURIDAD ADICIONAL EN PRODUCCIÓN
 # ─────────────────────────────────────────
 
 if not DEBUG:
