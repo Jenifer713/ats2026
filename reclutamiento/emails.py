@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 def _send(subject, to_email, html_content, attachments=None):
     """Función base para envío de correos con fallback silencioso."""
+    # Si no hay credenciales configuradas, no intentar enviar
+    if not getattr(settings, 'EMAIL_HOST_USER', ''):
+        logger.warning(f"EMAIL_HOST_USER no configurado. Correo a {to_email} omitido.")
+        return False
     try:
         text_content = strip_tags(html_content)
         msg = EmailMultiAlternatives(
@@ -25,12 +29,24 @@ def _send(subject, to_email, html_content, attachments=None):
         if attachments:
             for filename, content, mimetype in attachments:
                 msg.attach(filename, content, mimetype)
-        msg.send()
+        msg.get_connection(fail_silently=True)
+        msg.send(fail_silently=True)
         logger.info(f"Correo enviado a {to_email}: {subject}")
         return True
     except Exception as e:
         logger.error(f"Error enviando correo a {to_email}: {e}")
         return False
+
+
+def _send_async(subject, to_email, html_content, attachments=None):
+    """Envía el correo en un hilo separado para no bloquear la request."""
+    import threading
+    t = threading.Thread(
+        target=_send,
+        args=(subject, to_email, html_content, attachments),
+        daemon=True
+    )
+    t.start()
 
 
 def _html_base(title, content, color="#0d6efd"):
@@ -103,7 +119,8 @@ def enviar_bienvenida(user):
       Si no solicitaste esta cuenta, ignora este mensaje.
     </p>"""
     html = _html_base(f"Bienvenido/a a ATS Recluta — {nombre}", content, "#0d6efd")
-    return _send(f"✅ Bienvenido/a a ATS Recluta, {nombre}", user.email, html)
+    _send_async(f"✅ Bienvenido/a a ATS Recluta, {nombre}", user.email, html)
+    return True
 
 
 # ─────────────────────────────────────────────────────────
