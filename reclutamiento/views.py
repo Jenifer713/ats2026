@@ -130,8 +130,11 @@ def registro_publico(request):
         )
         PerfilUsuario.objects.create(user=user, rol='coordinador')
 
-        # Enviar correo de bienvenida
-        enviar_bienvenida(user)
+        # Enviar correo de bienvenida (no bloquea si falla)
+        try:
+            enviar_bienvenida(user)
+        except Exception:
+            pass
 
         messages.success(
             request,
