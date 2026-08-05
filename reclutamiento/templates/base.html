@@ -222,12 +222,12 @@
 
 </div><!-- /main-content -->
 
-{% endif %}{# fin if rol_usuario == 'candidato' #}
+{% endif %}{# fin else (no candidato) del if rol_usuario #}
 
 {% else %}
   <!-- Sin autenticación: solo mostrar el bloque content -->
   {% block auth_content %}{% endblock %}
-{% endif %}
+{% endif %}{# fin if user.is_authenticated #}
 
 <!-- ══════════════════════════════════════════════
      SCRIPTS
