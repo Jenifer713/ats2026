@@ -1314,21 +1314,40 @@ def mis_postulaciones(request):
     Vista exclusiva para usuarios con rol 'candidato'.
     Muestra todas las postulaciones vinculadas a su cuenta o correo.
     """
-    # Buscar candidatos por cuenta vinculada o por correo
-    candidatos = Candidato.objects.filter(
-        user=request.user
-    ).select_related('vacante').order_by('-fecha_registro')
+    import logging
+    logger = logging.getLogger(__name__)
 
-    # Si no tiene candidatos vinculados por FK, buscar por correo como fallback
-    if not candidatos.exists():
+    try:
+        # Buscar candidatos por cuenta vinculada (FK user)
         candidatos = Candidato.objects.filter(
-            correo=request.user.email
+            user=request.user
         ).select_related('vacante').order_by('-fecha_registro')
-        # Vincular automáticamente los que no están vinculados
-        for c in candidatos:
-            if c.user is None:
-                c.user = request.user
-                c.save(update_fields=['user'])
+
+        # Fallback por correo si no hay vinculados por FK
+        if not candidatos.exists():
+            candidatos = Candidato.objects.filter(
+                correo=request.user.email
+            ).select_related('vacante').order_by('-fecha_registro')
+            # Vincular automáticamente
+            for c in candidatos:
+                if c.user is None:
+                    try:
+                        c.user = request.user
+                        c.save(update_fields=['user'])
+                    except Exception:
+                        pass
+
+    except Exception as e:
+        logger.error(f"Error en mis_postulaciones: {e}")
+        # Si la columna user_id no existe aún (migración pendiente),
+        # buscar solo por correo como fallback
+        try:
+            candidatos = Candidato.objects.filter(
+                correo=request.user.email
+            ).select_related('vacante').order_by('-fecha_registro')
+        except Exception as e2:
+            logger.error(f"Error fallback mis_postulaciones: {e2}")
+            candidatos = Candidato.objects.none()
 
     return render(request, 'mis_postulaciones.html', {
         'candidatos': candidatos,

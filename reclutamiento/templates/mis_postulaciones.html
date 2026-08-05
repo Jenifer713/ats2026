@@ -15,7 +15,7 @@
       <p class="text-muted mb-0 small">Estado de tus procesos de selección</p>
     </div>
   </div>
-  <span class="badge bg-primary fs-6">{{ total }} postulación{{ total|pluralize:"es" }}</span>
+  <span class="badge bg-primary fs-6">{{ total }} postulación{% if total != 1 %}es{% endif %}</span>
 </div>
 
 {% if candidatos %}
@@ -41,17 +41,15 @@
             <i class="bi bi-laptop me-1"></i>{{ c.vacante.get_modalidad_display }}
           </p>
 
-          <!-- Progreso -->
-          {% with etapas="postulado preseleccion entrevista evaluacion oferta contratado" %}
-          {% with etapas_list=etapas.split %}
+          <!-- Progreso por etapas -->
           <div class="d-flex gap-1 mb-3 align-items-center">
-            {% for e in "postulado,preseleccion,entrevista,evaluacion,oferta,contratado"|split:"," %}
-              <div class="flex-fill rounded" style="height:6px;background:{% if e == c.etapa_actual %}var(--bs-primary){% elif c.etapa_actual == 'rechazado' %}#dc3545{% else %}#e9ecef{% endif %};"
-                   title="{{ e|capfirst }}"></div>
+            {% for e in c.ETAPA_CHOICES %}
+              {% if e.0 != 'rechazado' %}
+              <div class="flex-fill rounded" style="height:6px;background:{% if e.0 == c.etapa_actual %}#0d6efd{% elif c.etapa_actual == 'rechazado' %}#dc3545{% else %}#e9ecef{% endif %};"
+                   title="{{ e.1 }}"></div>
+              {% endif %}
             {% endfor %}
           </div>
-          {% endwith %}
-          {% endwith %}
 
           <!-- Estado -->
           <div class="d-flex align-items-center gap-2">
