@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Primeros Pasos - ATS{% endblock %}
+{% block breadcrumb %}Configuración Inicial{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <!-- Encabezado -->
+    <div class="text-center mb-5">
+      <div class="mb-3">
+        <i class="bi bi-people-fill text-primary" style="font-size:4rem;"></i>
+      </div>
+      <h2 class="fw-bold">¡Bienvenido al Sistema ATS!</h2>
+      <p class="text-muted fs-5">Sigue los pasos para configurar tu sistema de reclutamiento.</p>
+    </div>
+
+    <!-- Indicador de pasos -->
+    <div class="d-flex justify-content-center mb-5">
+      <div class="d-flex align-items-center gap-2">
+        <div class="d-flex flex-column align-items-center">
+          <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+               style="width:48px;height:48px;font-size:1.2rem;background:{% if paso >= 1 %}#0d6efd{% else %}#dee2e6{% endif %};">1</div>
+          <small class="mt-1 fw-semibold {% if paso >= 1 %}text-primary{% else %}text-muted{% endif %}">Reclutadores</small>
+        </div>
+        <div style="width:60px;height:3px;background:{% if paso >= 2 %}#0d6efd{% else %}#dee2e6{% endif %};border-radius:2px;"></div>
+        <div class="d-flex flex-column align-items-center">
+          <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+               style="width:48px;height:48px;font-size:1.2rem;background:{% if paso >= 2 %}#0d6efd{% else %}#dee2e6{% endif %};color:{% if paso >= 2 %}white{% else %}#adb5bd{% endif %};">2</div>
+          <small class="mt-1 fw-semibold {% if paso >= 2 %}text-primary{% else %}text-muted{% endif %}">Vacantes</small>
+        </div>
+        <div style="width:60px;height:3px;background:#dee2e6;border-radius:2px;"></div>
+        <div class="d-flex flex-column align-items-center">
+          <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+               style="width:48px;height:48px;font-size:1.2rem;background:#dee2e6;color:#adb5bd;">3</div>
+          <small class="mt-1 text-muted fw-semibold">Candidatos</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta del paso actual -->
+    {% if paso == 1 %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-4">
+          <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:56px;height:56px;">
+            <i class="bi bi-person-badge text-primary fs-3"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-1">Paso 1: Registra el equipo de reclutamiento</h5>
+            <p class="text-muted mb-0">
+              Antes de publicar vacantes, registra los reclutadores que gestionarán el proceso.
+              Cada vacante necesita un reclutador responsable asignado.
+            </p>
+          </div>
+        </div>
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-lightbulb me-2"></i>
+          <strong>¿Qué es un reclutador?</strong> Es el profesional de RRHH responsable de
+          gestionar vacantes, evaluar candidatos y coordinar entrevistas.
+        </div>
+        <a href="{% url 'crear_reclutador' %}" class="btn btn-primary btn-lg w-100">
+          <i class="bi bi-person-plus me-2"></i> Crear Primer Reclutador
+        </a>
+      </div>
+    </div>
+
+    {% elif paso == 2 %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3 mb-4">
+          <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:56px;height:56px;">
+            <i class="bi bi-briefcase text-success fs-3"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-1">Paso 2: Publica la primera vacante</h5>
+            <p class="text-muted mb-0">
+              ¡Excelente! Ya tienes reclutadores registrados. Ahora publica una vacante
+              para comenzar a recibir candidatos.
+            </p>
+          </div>
+        </div>
+        <div class="alert alert-success mb-3">
+          <i class="bi bi-check-circle me-2"></i>
+          <strong>Reclutadores registrados.</strong> Asigna una vacante a uno de ellos.
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'crear_vacante' %}" class="btn btn-success btn-lg flex-grow-1">
+            <i class="bi bi-briefcase-fill me-2"></i> Crear Primera Vacante
+          </a>
+          <a href="{% url 'lista_reclutadores' %}" class="btn btn-outline-secondary btn-lg">
+            <i class="bi bi-people me-1"></i> Ver Reclutadores
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Flujo completo del sistema -->
+    <div class="card border-0 bg-light">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-muted">
+          <i class="bi bi-map me-2"></i>Flujo completo del sistema
+        </h6>
+        <div class="row g-2">
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary rounded-pill">1</span>
+              <span class="small fw-semibold">Reclutadores</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-success rounded-pill">2</span>
+              <span class="small fw-semibold">Vacantes</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-info rounded-pill">3</span>
+              <span class="small fw-semibold">Candidatos</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-warning rounded-pill">4</span>
+              <span class="small fw-semibold">Entrevistas</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-secondary rounded-pill">5</span>
+              <span class="small fw-semibold">Evaluaciones</span>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-dark rounded-pill">6</span>
+              <span class="small fw-semibold">Ofertas / Pipeline</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

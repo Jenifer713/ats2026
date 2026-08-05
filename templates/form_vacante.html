@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Vacantes / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-briefcase text-success me-2"></i>{{ titulo }}</h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <!-- Título -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.titulo.label }} <span class="text-danger">*</span></label>
+              {{ form.titulo|add_invalid }}
+              {% for e in form.titulo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Descripción -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.descripcion.label }} <span class="text-danger">*</span></label>
+              {{ form.descripcion|add_invalid }}
+              {% for e in form.descripcion.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Departamento -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.departamento.label }} <span class="text-danger">*</span></label>
+              {{ form.departamento|add_invalid }}
+              {% for e in form.departamento.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Modalidad -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.modalidad.label }} <span class="text-danger">*</span></label>
+              {{ form.modalidad|add_invalid }}
+              {% for e in form.modalidad.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Salario -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.salario.label }} <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                {{ form.salario|add_invalid }}
+              </div>
+              {% for e in form.salario.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Fuente -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.fuente.label }} <span class="text-danger">*</span></label>
+              {{ form.fuente|add_invalid }}
+              {% for e in form.fuente.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Fecha publicación -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.fecha_publicacion.label }} <span class="text-danger">*</span></label>
+              {{ form.fecha_publicacion|add_invalid }}
+              {% for e in form.fecha_publicacion.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Fecha cierre -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.fecha_cierre.label }} <span class="text-danger">*</span></label>
+              {{ form.fecha_cierre|add_invalid }}
+              {% for e in form.fecha_cierre.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Debe ser posterior a la fecha de publicación.</div>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.estado.label }} <span class="text-danger">*</span></label>
+              {{ form.estado|add_invalid }}
+              {% for e in form.estado.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Reclutador -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.reclutador.label }} <span class="text-danger">*</span></label>
+              {{ form.reclutador|add_invalid }}
+              {% for e in form.reclutador.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+          </div>
+
+          <p class="text-muted small mt-3 mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success px-4"><i class="bi bi-check-lg me-1"></i> Guardar</button>
+            <a href="{% url 'lista_vacantes' %}" class="btn btn-outline-secondary px-4"><i class="bi bi-x me-1"></i> Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación cliente: fecha cierre > fecha publicación
+document.querySelector('form').addEventListener('submit', function(e) {
+  const pub  = document.getElementById('{{ form.fecha_publicacion.id_for_label }}').value;
+  const cierr = document.getElementById('{{ form.fecha_cierre.id_for_label }}').value;
+  if (pub && cierr && cierr <= pub) {
+    e.preventDefault();
+    const el = document.getElementById('{{ form.fecha_cierre.id_for_label }}');
+    el.classList.add('is-invalid');
+    let fb = el.nextElementSibling;
+    if (!fb || !fb.classList.contains('invalid-feedback')) {
+      fb = document.createElement('div');
+      fb.className = 'invalid-feedback d-block';
+      el.parentNode.insertBefore(fb, el.nextSibling);
+    }
+    fb.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>La fecha de cierre debe ser posterior a la fecha de publicación.';
+    el.focus();
+  }
+});
+</script>
+{% endblock %}

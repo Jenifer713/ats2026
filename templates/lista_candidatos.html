@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Candidatos - ATS{% endblock %}
+{% block breadcrumb %}Gestión / Candidatos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-people text-primary me-2"></i>Candidatos</h4>
+    <p class="text-muted small mb-0">Postulantes en proceso de selección</p>
+  </div>
+  <a href="{% url 'crear_candidato' %}" class="btn btn-primary">
+    <i class="bi bi-person-plus me-1"></i> Nuevo Candidato
+  </a>
+</div>
+
+<!-- Búsqueda y filtros -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2 flex-wrap">
+      <input type="text" name="q" value="{{ query }}" class="form-control"
+             placeholder="Buscar por nombre, cédula o correo..." style="max-width:360px;">
+      <select name="etapa" class="form-select" style="max-width:170px;">
+        <option value="">Todas las etapas</option>
+        <option value="postulado"    {% if request.GET.etapa == 'postulado'    %}selected{% endif %}>Postulado</option>
+        <option value="preseleccion" {% if request.GET.etapa == 'preseleccion' %}selected{% endif %}>Preselección</option>
+        <option value="entrevista"   {% if request.GET.etapa == 'entrevista'   %}selected{% endif %}>Entrevista</option>
+        <option value="evaluacion"   {% if request.GET.etapa == 'evaluacion'   %}selected{% endif %}>Evaluación</option>
+        <option value="oferta"       {% if request.GET.etapa == 'oferta'       %}selected{% endif %}>Oferta</option>
+        <option value="contratado"   {% if request.GET.etapa == 'contratado'   %}selected{% endif %}>Contratado</option>
+        <option value="rechazado"    {% if request.GET.etapa == 'rechazado'    %}selected{% endif %}>Rechazado</option>
+      </select>
+      <button class="btn btn-primary px-3" type="submit">
+        <i class="bi bi-search me-1"></i>Buscar
+      </button>
+      {% if query or request.GET.etapa %}
+        <a href="{% url 'lista_candidatos' %}" class="btn btn-outline-secondary px-3">
+          <i class="bi bi-x me-1"></i>Limpiar
+        </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th class="ps-3">Candidato</th>
+            <th>Cédula</th>
+            <th>Vacante</th>
+            <th>Etapa</th>
+            <th>Estado</th>
+            <th>HV</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in candidatos %}
+          <tr>
+            <td class="ps-3">
+              <a href="{% url 'detalle_candidato' c.pk %}" class="text-decoration-none text-dark">
+                <div class="fw-semibold">{{ c.nombres }} {{ c.apellidos }}</div>
+                <div class="text-muted small">{{ c.correo }}</div>
+              </a>
+            </td>
+            <td class="text-muted small">{{ c.cedula }}</td>
+            <td class="small">
+              <a href="{% url 'detalle_vacante' c.vacante.pk %}"
+                 class="text-decoration-none text-muted" title="{{ c.vacante.titulo }}">
+                {{ c.vacante.titulo|truncatechars:30 }}
+              </a>
+            </td>
+            <td>
+              {% with e=c.etapa_actual %}
+              <span class="badge bg-{% if e == 'contratado' %}dark{% elif e == 'rechazado' %}danger{% elif e == 'oferta' %}success{% elif e == 'evaluacion' %}warning text-dark{% elif e == 'entrevista' %}primary{% elif e == 'preseleccion' %}info text-dark{% else %}secondary{% endif %}">
+                {{ c.get_etapa_actual_display }}
+              </span>
+              {% endwith %}
+            </td>
+            <td>
+              <span class="badge bg-{% if c.estado == 'activo' %}success{% else %}secondary{% endif %}">
+                {{ c.get_estado_display }}
+              </span>
+            </td>
+            <td>
+              {% if c.hoja_de_vida %}
+                <a href="{{ c.hoja_de_vida.url }}" target="_blank"
+                   class="btn btn-sm btn-outline-info py-0 px-1" title="Ver PDF">
+                  <i class="bi bi-file-pdf"></i>
+                </a>
+              {% else %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="{% url 'detalle_candidato' c.pk %}"
+                 class="btn btn-sm btn-outline-info me-1" title="Ver detalle">
+                <i class="bi bi-eye"></i>
+              </a>
+              <a href="{% url 'editar_candidato' c.pk %}"
+                 class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'crear_entrevista' %}?candidato={{ c.pk }}"
+                 class="btn btn-sm btn-outline-warning me-1" title="Agendar entrevista">
+                <i class="bi bi-calendar-plus"></i>
+              </a>
+              <a href="{% url 'eliminar_candidato' c.pk %}"
+                 class="btn btn-sm btn-outline-danger" title="Eliminar">
+                <i class="bi bi-trash"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>
+              <p class="mb-3">No hay candidatos registrados aún.</p>
+              <a href="{% url 'crear_candidato' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus me-1"></i> Registrar primer candidato
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Paginación -->
+{% if candidatos.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination justify-content-center">
+    {% if candidatos.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ candidatos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if request.GET.etapa %}&etapa={{ request.GET.etapa }}{% endif %}">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+    {% endif %}
+    {% for num in candidatos.paginator.page_range %}
+      <li class="page-item {% if num == candidatos.number %}active{% endif %}">
+        <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if request.GET.etapa %}&etapa={{ request.GET.etapa }}{% endif %}">{{ num }}</a>
+      </li>
+    {% endfor %}
+    {% if candidatos.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ candidatos.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if request.GET.etapa %}&etapa={{ request.GET.etapa }}{% endif %}">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

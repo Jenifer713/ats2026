@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Calendario de Entrevistas - ATS{% endblock %}
+{% block breadcrumb %}Herramientas / Calendario{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
+<style>
+  #calendar { background: #fff; padding: 1rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+  .fc-day-today { background: rgba(13,110,253,.04) !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-calendar3 text-primary me-2"></i>Calendario de Entrevistas</h4>
+    <p class="text-muted small mb-0">Haz clic en una fecha para programar una entrevista</p>
+  </div>
+  <a href="{% url 'lista_entrevistas' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-list-ul me-1"></i> Ver Lista
+  </a>
+</div>
+
+<div id="calendar"></div>
+
+<!-- Modal: Crear entrevista desde calendario -->
+<div class="modal fade" id="modalCrearEntrevista" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold">
+          <i class="bi bi-calendar-plus text-primary me-2"></i>Nueva Entrevista
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formCrearEntrevista">
+          {% csrf_token %}
+          <div class="row g-3">
+            {% for field in form %}
+            <div class="{% if field.name == 'observaciones' %}col-12{% else %}col-md-6{% endif %}">
+              <label class="form-label fw-semibold small">{{ field.label }}</label>
+              {{ field }}
+              <div class="field-errors text-danger small"></div>
+            </div>
+            {% endfor %}
+          </div>
+          <div id="formErrores" class="alert alert-danger mt-3 d-none"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnGuardarEntrevista">
+          <i class="bi bi-check-lg me-1"></i> Guardar Entrevista
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de entrevista -->
+<div class="modal fade" id="modalDetalleEntrevista" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-0">
+      <div class="modal-header">
+        <h6 class="modal-title fw-bold"><i class="bi bi-calendar-event me-2"></i>Detalle de Entrevista</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detalleContenido"></div>
+      <div class="modal-footer">
+        <a href="#" id="btnEditarEntrevista" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </a>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="btnEliminarEntrevista">
+          <i class="bi bi-trash me-1"></i> Eliminar
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/locales/es.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const calendarEl = document.getElementById('calendar');
+  const modalCrear = new bootstrap.Modal(document.getElementById('modalCrearEntrevista'));
+  const modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalleEntrevista'));
+  let entrevistaIdActual = null;
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'es',
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    height: 'auto',
+    events: '{% url "entrevistas_json" %}',
+    eventClick: function (info) {
+      const props = info.event.extendedProps;
+      entrevistaIdActual = info.event.id;
+      document.getElementById('detalleContenido').innerHTML = `
+        <table class="table table-sm table-borderless">
+          <tr><th>Candidato</th><td>${props.candidato}</td></tr>
+          <tr><th>Reclutador</th><td>${props.reclutador}</td></tr>
+          <tr><th>Modalidad</th><td>${props.modalidad}</td></tr>
+          <tr><th>Inicio</th><td>${info.event.start.toLocaleString('es-CO')}</td></tr>
+          <tr><th>Fin</th><td>${info.event.end ? info.event.end.toLocaleString('es-CO') : '-'}</td></tr>
+          <tr><th>Observaciones</th><td>${props.observaciones || '-'}</td></tr>
+        </table>`;
+      document.getElementById('btnEditarEntrevista').href = props.editar_url;
+      modalDetalle.show();
+    },
+    dateClick: function (info) {
+      // Pre-llenar la fecha al hacer clic en el calendario
+      document.getElementById('id_fecha').value = info.dateStr;
+      modalCrear.show();
+    },
+  });
+  calendar.render();
+
+  // Guardar entrevista desde modal
+  document.getElementById('btnGuardarEntrevista').addEventListener('click', function () {
+    const form = document.getElementById('formCrearEntrevista');
+    const data = new FormData(form);
+    const erroresDiv = document.getElementById('formErrores');
+    erroresDiv.classList.add('d-none');
+
+    fetch('{% url "crear_entrevista_ajax" %}', {
+      method: 'POST',
+      body: data,
+      headers: { 'X-CSRFToken': data.get('csrfmiddlewaretoken') }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        calendar.refetchEvents();
+        modalCrear.hide();
+        form.reset();
+      } else {
+        let msgs = [];
+        Object.values(data.errors).forEach(v => msgs = msgs.concat(v));
+        erroresDiv.textContent = msgs.join(' | ');
+        erroresDiv.classList.remove('d-none');
+      }
+    });
+  });
+
+  // Eliminar entrevista desde modal de detalle
+  document.getElementById('btnEliminarEntrevista').addEventListener('click', function () {
+    if (!confirm('¿Eliminar esta entrevista?')) return;
+    fetch(`/calendario/eliminar/${entrevistaIdActual}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        calendar.refetchEvents();
+        modalDetalle.hide();
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

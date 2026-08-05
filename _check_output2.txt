@@ -1,0 +1,19 @@
+--- Looking for venv ---
+ats2626
+_check_env2.sh
+_check_env.sh
+_check_output2.txt
+_check_output.txt
+db.sqlite3
+manage.py
+media
+reclutamiento
+static
+templates
+--- Checking if venv exists ---
+ls: no se puede acceder a '/home/jeniffer/django/ats2626/venv': No existe el fichero o el directorio
+ls: no se puede acceder a '/home/jeniffer/django/ats2626/env': No existe el fichero o el directorio
+ls: no se puede acceder a '/home/jeniffer/django/ats2626/.venv': No existe el fichero o el directorio
+--- Already installed packages ---
+python-dotenv             1.2.2
+--- Done ---

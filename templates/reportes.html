@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Reportes - ATS{% endblock %}
+{% block breadcrumb %}Reportes{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-bar-chart-line text-primary me-2"></i>Reportes de Reclutamiento</h4>
+    <p class="text-muted small mb-0">Métricas de efectividad y análisis del proceso</p>
+  </div>
+</div>
+
+<!-- Tarjetas resumen -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div class="fw-bold fs-2 text-success">{{ time_to_hire_promedio }}</div>
+      <div class="text-muted small">Días promedio Time-to-Hire</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div class="fw-bold fs-2 text-primary">{{ total_contratados }}</div>
+      <div class="text-muted small">Candidatos Contratados</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-0 shadow-sm text-center p-3">
+      <div class="fw-bold fs-2 text-warning">{{ total_entrevistas }}</div>
+      <div class="text-muted small">Entrevistas Realizadas</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos principales -->
+<div class="row g-3 mb-4">
+  <!-- Efectividad de fuentes -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-diagram-3 text-info me-2"></i>Efectividad por Fuente (%)</h6>
+      </div>
+      <div class="card-body">
+        <canvas id="graficaFuentes" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vacantes por departamento -->
+  <div class="col-12 col-lg-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-pie-chart text-warning me-2"></i>Vacantes por Departamento</h6>
+      </div>
+      <div class="card-body">
+        <canvas id="graficaDeptos" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Entrevistas por mes -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Entrevistas Realizadas por Mes</h6>
+      </div>
+      <div class="card-body">
+        <canvas id="graficaEntrevistasMes" height="90"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla de efectividad de fuentes -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-0 pt-3 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-table text-secondary me-2"></i>Detalle Efectividad de Fuentes</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0">
+        <thead>
+          <tr><th>Fuente</th><th>Total Candidatos</th><th>Contratados</th><th>Efectividad</th></tr>
+        </thead>
+        <tbody>
+          {% for fuente, datos in fuentes_data.items %}
+          <tr>
+            <td class="fw-semibold">{{ fuente }}</td>
+            <td>{{ datos.total }}</td>
+            <td>{{ datos.contratados }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:8px;">
+                  <div class="progress-bar bg-success" style="width:{{ datos.efectividad }}%"></div>
+                </div>
+                <span class="fw-bold text-success small">{{ datos.efectividad }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla Time-to-Hire por candidato -->
+{% if time_to_hire_data %}
+<div class="card border-0 shadow-sm mt-3">
+  <div class="card-header bg-white border-0 pt-3 pb-0">
+    <h6 class="fw-bold mb-0"><i class="bi bi-hourglass-split text-info me-2"></i>Time-to-Hire por Candidato (Top 10)</h6>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0">
+        <thead><tr><th>Candidato</th><th>Días hasta Contratación</th></tr></thead>
+        <tbody>
+          {% for item in time_to_hire_data %}
+          <tr>
+            <td class="fw-semibold">{{ item.candidato }}</td>
+            <td>
+              <span class="badge bg-info text-dark">{{ item.dias }} días</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const fuentes_labels  = {{ fuentes_labels|safe }};
+const fuentes_ef      = {{ fuentes_efectividad|safe }};
+const fuentes_totales = {{ fuentes_totales|safe }};
+const deptos_labels   = {{ deptos_labels|safe }};
+const deptos_vals     = {{ deptos_valores|safe }};
+const meses_labels    = {{ meses_labels|safe }};
+const ent_por_mes     = {{ entrevistas_por_mes|safe }};
+
+// Efectividad fuentes (radar / bar)
+new Chart(document.getElementById('graficaFuentes'), {
+  type: 'bar',
+  data: {
+    labels: fuentes_labels,
+    datasets: [
+      {
+        label: 'Efectividad (%)',
+        data: fuentes_ef,
+        backgroundColor: ['#0d6efd','#198754','#ffc107','#6c757d'],
+        borderRadius: 6,
+      },
+      {
+        label: 'Total Candidatos',
+        data: fuentes_totales,
+        backgroundColor: ['rgba(13,110,253,.15)','rgba(25,135,84,.15)','rgba(255,193,7,.15)','rgba(108,117,125,.15)'],
+        borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: { y: { beginAtZero: true, max: 100 } }
+  }
+});
+
+// Vacantes por departamento (donut)
+new Chart(document.getElementById('graficaDeptos'), {
+  type: 'doughnut',
+  data: {
+    labels: deptos_labels,
+    datasets: [{
+      data: deptos_vals,
+      backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#0dcaf0','#6f42c1','#fd7e14','#20c997'],
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'right' } }
+  }
+});
+
+// Entrevistas por mes
+new Chart(document.getElementById('graficaEntrevistasMes'), {
+  type: 'bar',
+  data: {
+    labels: meses_labels,
+    datasets: [{
+      label: 'Entrevistas',
+      data: ent_por_mes,
+      backgroundColor: 'rgba(13,110,253,.7)',
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+</script>
+{% endblock %}

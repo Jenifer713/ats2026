@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Entrevistas - ATS{% endblock %}
+{% block breadcrumb %}Gestión / Entrevistas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-chat-square-text text-warning me-2"></i>Entrevistas</h4>
+    <p class="text-muted small mb-0">Agenda de entrevistas programadas</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'calendario' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-calendar3 me-1"></i> Ver Calendario
+    </a>
+    <a href="{% url 'crear_entrevista' %}" class="btn btn-warning text-dark">
+      <i class="bi bi-calendar-plus me-1"></i> Nueva Entrevista
+    </a>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Buscar por candidato o reclutador...">
+      <button class="btn btn-warning px-3" type="submit"><i class="bi bi-search"></i></button>
+      {% if query %}<a href="{% url 'lista_entrevistas' %}" class="btn btn-outline-secondary px-3"><i class="bi bi-x"></i></a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0">
+        <thead>
+          <tr><th>Candidato</th><th>Reclutador</th><th>Fecha</th><th>Hora</th><th>Modalidad</th><th>Obs.</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for e in entrevistas %}
+          <tr>
+            <td class="fw-semibold">{{ e.candidato }}</td>
+            <td>{{ e.reclutador }}</td>
+            <td>{{ e.fecha }}</td>
+            <td class="small">{{ e.hora_inicio }} - {{ e.hora_fin }}</td>
+            <td><span class="badge bg-{% if e.modalidad == 'virtual' %}success{% elif e.modalidad == 'presencial' %}primary{% else %}warning text-dark{% endif %}">{{ e.get_modalidad_display }}</span></td>
+            <td class="text-muted small" style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ e.observaciones|default:"—" }}</td>
+            <td>
+              <a href="{% url 'crear_evaluacion' %}?entrevista_id={{ e.pk }}" class="btn btn-sm btn-outline-success me-1" title="Evaluar"><i class="bi bi-star"></i></a>
+              <a href="{% url 'editar_entrevista' e.pk %}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'eliminar_entrevista' e.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No hay entrevistas registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if entrevistas.has_other_pages %}
+<nav class="mt-3"><ul class="pagination justify-content-center">
+  {% if entrevistas.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ entrevistas.previous_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}
+  {% for num in entrevistas.paginator.page_range %}<li class="page-item {% if num == entrevistas.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a></li>{% endfor %}
+  {% if entrevistas.has_next %}<li class="page-item"><a class="page-link" href="?page={{ entrevistas.next_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,312 @@
+/*
+ * ATS - Sistema de Reclutamiento
+ * Estilos personalizados del sistema
+ */
+
+/* ─── Variables CSS ─── */
+:root {
+  --sidebar-width: 260px;
+  --sidebar-bg: #1a1d23;
+  --sidebar-text: #adb5bd;
+  --sidebar-hover: #2d3038;
+  --sidebar-active: #0d6efd;
+  --topbar-height: 60px;
+  --card-shadow: 0 2px 12px rgba(0,0,0,.08);
+}
+
+/* ─── Layout principal ─── */
+body {
+  background-color: #f4f6f9;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Sidebar ─── */
+#sidebar {
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  background: var(--sidebar-bg);
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 1000;
+  transition: width 0.25s ease;
+  overflow-x: hidden;
+}
+
+#sidebar .sidebar-brand {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 1.2rem;
+  background: rgba(0,0,0,.2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#sidebar .sidebar-brand .brand-icon {
+  font-size: 1.4rem;
+  margin-right: .6rem;
+  color: var(--sidebar-active);
+}
+
+#sidebar .nav-section-title {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #6c757d;
+  padding: .8rem 1.2rem .3rem;
+}
+
+#sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  padding: .6rem 1.2rem;
+  color: var(--sidebar-text);
+  border-radius: 6px;
+  margin: 1px 8px;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+  font-size: .9rem;
+}
+
+#sidebar .nav-link i {
+  font-size: 1.1rem;
+  margin-right: .75rem;
+  width: 22px;
+  text-align: center;
+}
+
+#sidebar .nav-link:hover {
+  background: var(--sidebar-hover);
+  color: #fff;
+}
+
+#sidebar .nav-link.active {
+  background: var(--sidebar-active);
+  color: #fff;
+}
+
+/* ─── Main content ─── */
+#main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  transition: margin-left 0.25s ease;
+}
+
+/* ─── Topbar ─── */
+.topbar {
+  height: var(--topbar-height);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* ─── Tarjetas del dashboard ─── */
+.metric-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  transition: transform .15s, box-shadow .15s;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+
+.metric-card .metric-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.metric-card .metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.metric-card .metric-label {
+  font-size: .82rem;
+  color: #6c757d;
+  margin-top: .15rem;
+}
+
+/* ─── Pipeline Kanban ─── */
+.pipeline-container {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-height: 70vh;
+}
+
+.pipeline-col {
+  min-width: 200px;
+  flex: 1;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+}
+
+.pipeline-col-header {
+  padding: .7rem 1rem;
+  border-radius: 10px 10px 0 0;
+  font-weight: 600;
+  font-size: .85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pipeline-cards {
+  min-height: 200px;
+  padding: 8px;
+}
+
+.candidate-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: .7rem;
+  margin-bottom: 6px;
+  cursor: grab;
+  transition: box-shadow .15s, transform .1s;
+  font-size: .85rem;
+}
+
+.candidate-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  transform: translateY(-1px);
+}
+
+.candidate-card.ui-draggable-dragging {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  transform: rotate(1.5deg) scale(1.03);
+  z-index: 999;
+}
+
+.pipeline-cards.ui-droppable-hover {
+  background: rgba(13,110,253,.05);
+  border: 2px dashed #0d6efd;
+  border-radius: 8px;
+}
+
+/* ─── Calificación rápida (Hotkeys) ─── */
+.puntuacion-badge {
+  display: inline-block;
+  padding: .25rem .6rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: .8rem;
+}
+.puntuacion-1 { background: #dc3545; color: #fff; }
+.puntuacion-2 { background: #fd7e14; color: #fff; }
+.puntuacion-3 { background: #ffc107; color: #000; }
+.puntuacion-4 { background: #0d6efd; color: #fff; }
+.puntuacion-5 { background: #198754; color: #fff; }
+
+.hotkey-hint {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: rgba(0,0,0,.8);
+  color: #fff;
+  padding: .5rem 1rem;
+  border-radius: 8px;
+  font-size: .8rem;
+  z-index: 9999;
+  display: none;
+}
+
+/* ─── Tablas ─── */
+.table-ats thead th {
+  background: #f8f9fa;
+  font-size: .82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table-ats tbody tr:hover { background: rgba(13,110,253,.03); }
+
+/* ─── Formularios ─── */
+.form-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+/* ─── FullCalendar personalización ─── */
+.fc-toolbar-title { font-size: 1.1rem !important; font-weight: 600 !important; }
+.fc-event { cursor: pointer; border-radius: 6px !important; }
+
+/* ─── Alertas de mensajes ─── */
+.alert-fixed {
+  position: fixed;
+  top: 70px;
+  right: 1.5rem;
+  z-index: 9000;
+  min-width: 300px;
+  max-width: 450px;
+  animation: slideIn .3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ─── Botón de logout (form dentro del sidebar) ─── */
+#logoutForm button.nav-link {
+  display: flex;
+  align-items: center;
+  padding: .6rem 1.2rem;
+  color: #dc3545;
+  border-radius: 6px;
+  margin: 1px 8px;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+  font-size: .9rem;
+  font-family: inherit;
+}
+
+#logoutForm button.nav-link i {
+  font-size: 1.1rem;
+  margin-right: .75rem;
+  width: 22px;
+  text-align: center;
+}
+
+#logoutForm button.nav-link:hover {
+  background: rgba(220, 53, 69, .1);
+}
+
+/* ─── Responsivo ─── */
+@media (max-width: 768px) {
+  #sidebar { width: 0; }
+  #main-content { margin-left: 0; }
+  #sidebar.show { width: var(--sidebar-width); }
+}
+
+/* ─── Botón extra pequeño ─── */
+.btn-xs {
+  padding: .1rem .4rem;
+  font-size: .75rem;
+  border-radius: 4px;
+  line-height: 1.5;
+}

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Usuarios / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-person-plus text-danger me-2"></i>{{ titulo }}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row g-3">
+
+            {% if not objeto %}
+            <!-- Campos solo al CREAR -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Usuario (login) <span class="text-danger">*</span></label>
+              {{ form.username|add_invalid }}
+              {% for e in form.username.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Solo letras, números y @/./+/-/_</div>
+            </div>
+            {% endif %}
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nombres <span class="text-danger">*</span></label>
+              {{ form.first_name|add_invalid }}
+              {% for e in form.first_name.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Apellidos <span class="text-danger">*</span></label>
+              {{ form.last_name|add_invalid }}
+              {% for e in form.last_name.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
+              {{ form.email|add_invalid }}
+              {% for e in form.email.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Teléfono</label>
+              {{ form.telefono|add_invalid }}
+              {% for e in form.telefono.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Rol en el Sistema <span class="text-danger">*</span></label>
+              {{ form.rol|add_invalid }}
+              {% for e in form.rol.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">
+                <strong>Admin:</strong> acceso total ·
+                <strong>Reclutador:</strong> gestión completa ·
+                <strong>Coordinador:</strong> solo lectura
+              </div>
+            </div>
+
+            {% if objeto %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estado</label>
+              <div class="form-check form-switch mt-2">
+                {{ form.is_active }}
+                <label class="form-check-label ms-2">Usuario Activo</label>
+              </div>
+              {% for e in form.is_active.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if not objeto %}
+            <!-- Contraseña solo al CREAR -->
+            <div class="col-12">
+              <hr class="my-2">
+              <p class="fw-semibold text-muted small mb-2">
+                <i class="bi bi-lock me-1"></i>Definir contraseña de acceso
+              </p>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+              {{ form.password1|add_invalid }}
+              {% for e in form.password1.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Mínimo 8 caracteres. No uses contraseñas comunes.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Confirmar Contraseña <span class="text-danger">*</span></label>
+              {{ form.password2|add_invalid }}
+              {% for e in form.password2.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+          </div>
+
+          <p class="text-muted small mt-3 mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-danger px-4">
+              <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'lista_usuarios' %}" class="btn btn-outline-secondary px-4">
+              <i class="bi bi-x me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Nota de credenciales -->
+    {% if not objeto %}
+    <div class="alert alert-warning mt-3">
+      <i class="bi bi-key me-2"></i>
+      <strong>Importante:</strong> Una vez creado el usuario, comunica las credenciales
+      (nombre de usuario y contraseña) a la persona. Ella las usará en
+      <strong>http://127.0.0.1:8000/login/</strong> para ingresar al sistema.
+      Puedes cambiar la contraseña en cualquier momento desde
+      <a href="{% url 'lista_usuarios' %}">Usuarios y Roles</a>.
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

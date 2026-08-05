@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Evaluaciones / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-star-fill text-info me-2"></i>{{ titulo }}</h5>
+      </div>
+      <div class="card-body p-4">
+
+        <!-- Instrucción de hotkeys -->
+        <div class="alert alert-info small mb-4">
+          <i class="bi bi-keyboard me-1"></i>
+          <strong>Atajo de teclado:</strong> Presiona
+          <kbd>1</kbd> Muy malo &nbsp;
+          <kbd>2</kbd> Malo &nbsp;
+          <kbd>3</kbd> Regular &nbsp;
+          <kbd>4</kbd> Bueno &nbsp;
+          <kbd>5</kbd> Excelente — para calificar rápidamente.
+        </div>
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" id="formEvaluacion" novalidate>
+          {% csrf_token %}
+
+          <!-- Entrevista -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.entrevista.label }} <span class="text-danger">*</span></label>
+            {{ form.entrevista|add_invalid }}
+            {% for e in form.entrevista.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+          </div>
+
+          <!-- Puntuación -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.puntuacion.label }} <span class="text-danger">*</span></label>
+            {{ form.puntuacion|add_invalid }}
+            {% for e in form.puntuacion.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            <div class="form-text">1 = Muy Malo &nbsp;|&nbsp; 2 = Malo &nbsp;|&nbsp; 3 = Regular &nbsp;|&nbsp; 4 = Bueno &nbsp;|&nbsp; 5 = Excelente</div>
+            <!-- Feedback visual de calificación (Hotkeys) -->
+            <div id="feedback-puntuacion" class="mt-2"></div>
+          </div>
+
+          <!-- Comentario -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.comentario.label }} <span class="text-danger">*</span></label>
+            {{ form.comentario|add_invalid }}
+            {% for e in form.comentario.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+          </div>
+
+          <!-- Recomendación -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">{{ form.recomendacion.label }} <span class="text-danger">*</span></label>
+            {{ form.recomendacion|add_invalid }}
+            {% for e in form.recomendacion.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+          </div>
+
+          <p class="text-muted small mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-info text-white px-4">
+              <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'lista_evaluaciones' %}" class="btn btn-outline-secondary px-4">
+              <i class="bi bi-x me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Indicador de calificación por hotkey -->
+<div class="hotkey-hint" id="hotkeyHint"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/hotkeys-js@3.13.7/dist/hotkeys.min.js"></script>
+<script>
+/* ─── Calificación rápida con Hotkeys-js ─── */
+const campoPuntuacion = document.getElementById('id_puntuacion');
+const feedbackDiv     = document.getElementById('feedback-puntuacion');
+const hotkeyHint      = document.getElementById('hotkeyHint');
+const textos = { 1: 'Muy Malo', 2: 'Malo', 3: 'Regular', 4: 'Bueno', 5: 'Excelente' };
+const colores = { 1: 'danger', 2: 'warning', 3: 'secondary', 4: 'primary', 5: 'success' };
+
+function actualizarPuntuacion(valor) {
+  if (!campoPuntuacion) return;
+  campoPuntuacion.value = valor;
+  campoPuntuacion.classList.remove('is-invalid');
+  feedbackDiv.innerHTML =
+    `<span class="badge bg-${colores[valor]} fs-6 px-3 py-2">
+       ${valor}/5 — ${textos[valor]}
+     </span>`;
+  hotkeyHint.textContent = `Calificación registrada: ${textos[valor]}`;
+  hotkeyHint.style.display = 'block';
+  setTimeout(() => { hotkeyHint.style.display = 'none'; }, 2500);
+}
+
+// Registrar hotkeys 1-5 (solo cuando no se está escribiendo en otro campo)
+hotkeys('1,2,3,4,5', function(event, handler) {
+  // No interferir cuando el foco está en un input/textarea
+  const tag = document.activeElement.tagName.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+    if (document.activeElement.id !== 'id_puntuacion') return;
+  }
+  event.preventDefault();
+  actualizarPuntuacion(parseInt(handler.key));
+});
+
+// Validación cliente: puntuación entre 1 y 5
+if (campoPuntuacion) {
+  campoPuntuacion.addEventListener('input', function() {
+    const v = parseInt(this.value);
+    if (isNaN(v) || v < 1 || v > 5) {
+      this.classList.add('is-invalid');
+    } else {
+      this.classList.remove('is-invalid');
+      actualizarPuntuacion(v);
+    }
+  });
+}
+</script>
+{% endblock %}

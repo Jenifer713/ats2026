@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Candidatos / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-person-plus text-primary me-2"></i>{{ titulo }}</h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" novalidate id="formCandidato">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <!-- Nombres -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.nombres.label }} <span class="text-danger">*</span></label>
+              {{ form.nombres|add_invalid }}
+              {% for e in form.nombres.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Apellidos -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.apellidos.label }} <span class="text-danger">*</span></label>
+              {{ form.apellidos|add_invalid }}
+              {% for e in form.apellidos.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Cédula -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.cedula.label }} <span class="text-danger">*</span></label>
+              {{ form.cedula|add_invalid }}
+              {% for e in form.cedula.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Solo dígitos numéricos, entre 5 y 15 caracteres.</div>
+            </div>
+
+            <!-- Correo -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.correo.label }} <span class="text-danger">*</span></label>
+              {{ form.correo|add_invalid }}
+              {% for e in form.correo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Teléfono -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.telefono.label }} <span class="text-danger">*</span></label>
+              {{ form.telefono|add_invalid }}
+              {% for e in form.telefono.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Formato: +57 300 000 0000</div>
+            </div>
+
+            <!-- Vacante -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.vacante.label }} <span class="text-danger">*</span></label>
+              {{ form.vacante|add_invalid }}
+              {% for e in form.vacante.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Etapa actual -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.etapa_actual.label }} <span class="text-danger">*</span></label>
+              {{ form.etapa_actual|add_invalid }}
+              {% for e in form.etapa_actual.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Estado -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.estado.label }} <span class="text-danger">*</span></label>
+              {{ form.estado|add_invalid }}
+              {% for e in form.estado.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Hoja de vida -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.hoja_de_vida.label }}</label>
+              {{ form.hoja_de_vida|add_invalid }}
+              {% for e in form.hoja_de_vida.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">
+                <i class="bi bi-info-circle me-1"></i>Solo archivos PDF. Máximo 5 MB.
+              </div>
+              {% if objeto.hoja_de_vida %}
+                <div class="mt-2">
+                  <a href="{{ objeto.hoja_de_vida.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-file-pdf me-1"></i>Ver HV actual
+                  </a>
+                  <span class="text-muted small ms-2">Sube un nuevo PDF para reemplazarlo.</span>
+                </div>
+              {% endif %}
+              <!-- Feedback de validación cliente para el archivo -->
+              <div id="fileError" class="invalid-feedback d-none"></div>
+            </div>
+
+          </div>
+
+          <p class="text-muted small mt-3 mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4" id="btnGuardar">
+              <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'lista_candidatos' %}" class="btn btn-outline-secondary px-4">
+              <i class="bi bi-x me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación cliente: archivo debe ser PDF y menor a 5 MB
+const inputFile = document.getElementById('{{ form.hoja_de_vida.id_for_label }}');
+const fileError = document.getElementById('fileError');
+
+if (inputFile) {
+  inputFile.addEventListener('change', function () {
+    const file = this.files[0];
+    fileError.classList.add('d-none');
+    this.classList.remove('is-invalid');
+
+    if (file) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        this.classList.add('is-invalid');
+        fileError.textContent = 'Solo se permiten archivos PDF.';
+        fileError.classList.remove('d-none');
+        this.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.classList.add('is-invalid');
+        fileError.textContent = 'El archivo supera el límite de 5 MB. Tamaño: ' +
+          (file.size / (1024*1024)).toFixed(1) + ' MB.';
+        fileError.classList.remove('d-none');
+        this.value = '';
+        return;
+      }
+      // Archivo válido — mostrar nombre
+      this.classList.remove('is-invalid');
+    }
+  });
+}
+
+// Validación cliente: cédula solo dígitos
+const cedulaInput = document.getElementById('{{ form.cedula.id_for_label }}');
+if (cedulaInput) {
+  cedulaInput.addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '');
+  });
+}
+</script>
+{% endblock %}

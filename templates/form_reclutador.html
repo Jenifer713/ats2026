@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Reclutadores / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-person-badge text-primary me-2"></i>{{ titulo }}
+        </h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <!-- Nombres -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.nombres.id_for_label }}">
+              {{ form.nombres.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.nombres|add_invalid }}
+            {% for error in form.nombres.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- Apellidos -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.apellidos.id_for_label }}">
+              {{ form.apellidos.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.apellidos|add_invalid }}
+            {% for error in form.apellidos.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- Correo -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.correo.id_for_label }}">
+              {{ form.correo.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.correo|add_invalid }}
+            {% for error in form.correo.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- Teléfono -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.telefono.id_for_label }}">
+              {{ form.telefono.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.telefono|add_invalid }}
+            {% for error in form.telefono.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+            <div class="form-text">Formato: +57 300 000 0000</div>
+          </div>
+
+          <!-- Cargo -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.cargo.id_for_label }}">
+              {{ form.cargo.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.cargo|add_invalid }}
+            {% for error in form.cargo.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- Estado -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="{{ form.estado.id_for_label }}">
+              {{ form.estado.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.estado|add_invalid }}
+            {% for error in form.estado.errors %}
+              <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <p class="text-muted small mb-3"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'lista_reclutadores' %}" class="btn btn-outline-secondary px-4">
+              <i class="bi bi-x me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

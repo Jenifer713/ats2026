@@ -1,0 +1,17 @@
+{% load form_tags %}
+<div class="mb-3 {% if field.field.widget.attrs.class == 'form-control' or field.field.widget.attrs.class == 'form-select' %}{% endif %}">
+  <label class="form-label fw-semibold" for="{{ field.id_for_label }}">
+    {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+  </label>
+  {{ field|add_invalid }}
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="invalid-feedback d-block">
+        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  {% if field.help_text %}
+    <div class="form-text text-muted"><i class="bi bi-info-circle me-1"></i>{{ field.help_text }}</div>
+  {% endif %}
+</div>

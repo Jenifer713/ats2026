@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Ofertas / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-text text-success me-2"></i>{{ titulo }}</h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate id="formOferta">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <!-- Candidato -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.candidato.label }} <span class="text-danger">*</span></label>
+              {{ form.candidato|add_invalid }}
+              {% for e in form.candidato.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Cargo -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.cargo.label }} <span class="text-danger">*</span></label>
+              {{ form.cargo|add_invalid }}
+              {% for e in form.cargo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Salario -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.salario.label }} <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                {{ form.salario|add_invalid }}
+              </div>
+              {% for e in form.salario.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Fecha -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+              {{ form.fecha|add_invalid }}
+              {% for e in form.fecha.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Estado -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.estado.label }} <span class="text-danger">*</span></label>
+              {{ form.estado|add_invalid }}
+              {% for e in form.estado.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Observaciones -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.observaciones.label }}</label>
+              {{ form.observaciones|add_invalid }}
+              {% for e in form.observaciones.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+          </div>
+
+          <p class="text-muted small mt-3 mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success px-4"><i class="bi bi-check-lg me-1"></i> Guardar</button>
+            <a href="{% url 'lista_ofertas' %}" class="btn btn-outline-secondary px-4"><i class="bi bi-x me-1"></i> Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación cliente: salario positivo
+const salarioInput = document.getElementById('{{ form.salario.id_for_label }}');
+if (salarioInput) {
+  salarioInput.addEventListener('blur', function() {
+    const v = parseFloat(this.value);
+    if (isNaN(v) || v <= 0) {
+      this.classList.add('is-invalid');
+    } else {
+      this.classList.remove('is-invalid');
+    }
+  });
+}
+</script>
+{% endblock %}

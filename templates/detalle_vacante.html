@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}{{ vacante.titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Vacantes / {{ vacante.titulo }}{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">{{ vacante.titulo }}</h4>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <span class="badge bg-{% if vacante.estado == 'abierta' %}success{% elif vacante.estado == 'cerrada' %}secondary{% else %}warning text-dark{% endif %} fs-6">
+        {{ vacante.get_estado_display }}
+      </span>
+      <span class="text-muted small">
+        <i class="bi bi-building me-1"></i>{{ vacante.get_departamento_display }}
+      </span>
+      <span class="text-muted small">
+        <i class="bi bi-geo-alt me-1"></i>{{ vacante.get_modalidad_display }}
+      </span>
+      <span class="text-muted small">
+        <i class="bi bi-person-badge me-1"></i>{{ vacante.reclutador }}
+      </span>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'crear_candidato' %}?vacante={{ vacante.pk }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-person-plus me-1"></i> Agregar Candidato
+    </a>
+    <a href="{% url 'editar_vacante' vacante.pk %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i> Editar
+    </a>
+    <a href="{% url 'lista_vacantes' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Descripción y detalles -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Información</h6>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">Salario</dt>
+          <dd class="col-7 fw-semibold">${{ vacante.salario|floatformat:0 }}</dd>
+          <dt class="col-5 text-muted">Publicación</dt>
+          <dd class="col-7">{{ vacante.fecha_publicacion }}</dd>
+          <dt class="col-5 text-muted">Cierre</dt>
+          <dd class="col-7">{{ vacante.fecha_cierre }}</dd>
+          <dt class="col-5 text-muted">Fuente</dt>
+          <dd class="col-7">{{ vacante.get_fuente_display }}</dd>
+          <dt class="col-5 text-muted">Candidatos</dt>
+          <dd class="col-7 fw-bold text-primary">{{ total }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-file-text me-2"></i>Descripción</h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-0" style="white-space:pre-line;">{{ vacante.descripcion }}</p>
+      </div>
+    </div>
+
+    <!-- Candidatos por etapa -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 pt-3 pb-0">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart me-2"></i>Por Etapa</h6>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          {% for etapa, count in etapas_count.items %}
+          <tr>
+            <td class="small ps-3">{{ etapa|capfirst }}</td>
+            <td class="text-end pe-3">
+              <span class="badge bg-secondary">{{ count }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de candidatos -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-people text-primary me-2"></i>
+          Candidatos ({{ total }})
+        </h6>
+        <a href="{% url 'crear_candidato' %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus me-1"></i> Nuevo
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% if candidatos %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3">Candidato</th>
+                <th>Cédula</th>
+                <th>Etapa</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in candidatos %}
+              <tr>
+                <td class="ps-3">
+                  <div class="fw-semibold">{{ c.nombre_completo }}</div>
+                  <div class="text-muted small">{{ c.correo }}</div>
+                </td>
+                <td class="text-muted small">{{ c.cedula }}</td>
+                <td>
+                  {% with e=c.etapa_actual %}
+                  <span class="badge bg-{% if e == 'contratado' %}dark{% elif e == 'rechazado' %}danger{% elif e == 'oferta' %}success{% elif e == 'evaluacion' %}warning text-dark{% elif e == 'entrevista' %}primary{% elif e == 'preseleccion' %}info text-dark{% else %}secondary{% endif %}">
+                    {{ c.get_etapa_actual_display }}
+                  </span>
+                  {% endwith %}
+                </td>
+                <td class="text-muted small">{{ c.fecha_registro|date:"d/m/Y" }}</td>
+                <td>
+                  <a href="{% url 'detalle_candidato' c.pk %}" class="btn btn-xs btn-outline-info py-0 px-1 me-1" title="Ver detalle">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="{% url 'editar_candidato' c.pk %}" class="btn btn-xs btn-outline-primary py-0 px-1 me-1" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'crear_entrevista' %}?candidato={{ c.pk }}" class="btn btn-xs btn-outline-warning py-0 px-1" title="Agendar entrevista">
+                    <i class="bi bi-calendar-plus"></i>
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+          <p class="mb-3">No hay candidatos para esta vacante aún.</p>
+          <a href="{% url 'crear_candidato' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i> Agregar Primer Candidato
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

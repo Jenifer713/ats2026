@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Ofertas - ATS{% endblock %}
+{% block breadcrumb %}Gestión / Ofertas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-text text-success me-2"></i>Ofertas Laborales</h4>
+    <p class="text-muted small mb-0">Ofertas enviadas a candidatos seleccionados</p>
+  </div>
+  <a href="{% url 'crear_oferta' %}" class="btn btn-success">
+    <i class="bi bi-plus-circle me-1"></i> Nueva Oferta
+  </a>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Buscar por candidato o cargo...">
+      <button class="btn btn-success px-3" type="submit"><i class="bi bi-search"></i></button>
+      {% if query %}<a href="{% url 'lista_ofertas' %}" class="btn btn-outline-secondary px-3"><i class="bi bi-x"></i></a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0">
+        <thead>
+          <tr><th>Candidato</th><th>Cargo</th><th>Salario</th><th>Fecha</th><th>Estado</th><th>Obs.</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for o in ofertas %}
+          <tr>
+            <td class="fw-semibold">{{ o.candidato }}</td>
+            <td>{{ o.cargo }}</td>
+            <td class="fw-semibold">${{ o.salario|floatformat:0 }}</td>
+            <td class="text-muted small">{{ o.fecha }}</td>
+            <td>
+              <span class="badge bg-{% if o.estado == 'aceptada' %}success{% elif o.estado == 'rechazada' %}danger{% elif o.estado == 'vencida' %}secondary{% else %}warning text-dark{% endif %}">
+                {{ o.get_estado_display }}
+              </span>
+            </td>
+            <td class="text-muted small" style="max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ o.observaciones|default:"—" }}</td>
+            <td>
+              <a href="{% url 'editar_oferta' o.pk %}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+              <a href="{% url 'eliminar_oferta' o.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No hay ofertas registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if ofertas.has_other_pages %}
+<nav class="mt-3"><ul class="pagination justify-content-center">
+  {% if ofertas.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ ofertas.previous_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}
+  {% for num in ofertas.paginator.page_range %}<li class="page-item {% if num == ofertas.number %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a></li>{% endfor %}
+  {% if ofertas.has_next %}<li class="page-item"><a class="page-link" href="?page={{ ofertas.next_page_number }}{% if query %}&q={{ query }}{% endif %}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}

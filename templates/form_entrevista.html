@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load form_tags %}
+{% block title %}{{ titulo }} - ATS{% endblock %}
+{% block breadcrumb %}Entrevistas / {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card form-card">
+      <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-calendar-event text-warning me-2"></i>{{ titulo }}</h5>
+      </div>
+      <div class="card-body p-4">
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate id="formEntrevista">
+          {% csrf_token %}
+          <div class="row g-3">
+
+            <!-- Candidato -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.candidato.label }} <span class="text-danger">*</span></label>
+              {{ form.candidato|add_invalid }}
+              {% for e in form.candidato.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Reclutador -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.reclutador.label }} <span class="text-danger">*</span></label>
+              {{ form.reclutador|add_invalid }}
+              {% for e in form.reclutador.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Fecha -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+              {{ form.fecha|add_invalid }}
+              {% for e in form.fecha.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Hora inicio -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.hora_inicio.label }} <span class="text-danger">*</span></label>
+              {{ form.hora_inicio|add_invalid }}
+              {% for e in form.hora_inicio.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Hora fin -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">{{ form.hora_fin.label }} <span class="text-danger">*</span></label>
+              {{ form.hora_fin|add_invalid }}
+              {% for e in form.hora_fin.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+              <div class="form-text">Debe ser posterior a la hora de inicio.</div>
+            </div>
+
+            <!-- Modalidad -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">{{ form.modalidad.label }} <span class="text-danger">*</span></label>
+              {{ form.modalidad|add_invalid }}
+              {% for e in form.modalidad.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Observaciones -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">{{ form.observaciones.label }}</label>
+              {{ form.observaciones|add_invalid }}
+              {% for e in form.observaciones.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ e }}</div>{% endfor %}
+            </div>
+
+          </div>
+
+          <p class="text-muted small mt-3 mb-0"><span class="text-danger">*</span> Campos obligatorios</p>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-warning text-dark px-4">
+              <i class="bi bi-check-lg me-1"></i> Guardar
+            </button>
+            <a href="{% url 'lista_entrevistas' %}" class="btn btn-outline-secondary px-4">
+              <i class="bi bi-x me-1"></i> Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación cliente: hora_fin > hora_inicio
+document.getElementById('formEntrevista').addEventListener('submit', function(e) {
+  const inicio = document.getElementById('{{ form.hora_inicio.id_for_label }}').value;
+  const fin    = document.getElementById('{{ form.hora_fin.id_for_label }}').value;
+  if (inicio && fin && fin <= inicio) {
+    e.preventDefault();
+    const elFin = document.getElementById('{{ form.hora_fin.id_for_label }}');
+    elFin.classList.add('is-invalid');
+    // Mostrar/actualizar mensaje
+    let fb = elFin.parentNode.querySelector('.invalid-feedback');
+    if (!fb) {
+      fb = document.createElement('div');
+      fb.className = 'invalid-feedback d-block';
+      elFin.parentNode.appendChild(fb);
+    }
+    fb.classList.add('d-block');
+    fb.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>La hora de fin debe ser posterior a la hora de inicio.';
+    elFin.focus();
+  }
+});
+
+// Limpiar error de hora_fin cuando cambia
+['{{ form.hora_inicio.id_for_label }}', '{{ form.hora_fin.id_for_label }}'].forEach(function(id) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', function() {
+    this.classList.remove('is-invalid');
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Usuarios y Roles - ATS{% endblock %}
+{% block breadcrumb %}Sistema / Usuarios y Roles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-shield-lock text-danger me-2"></i>Usuarios y Roles</h4>
+    <p class="text-muted small mb-0">Gestiona quién puede acceder al sistema y qué puede hacer</p>
+  </div>
+  <a href="{% url 'crear_usuario' %}" class="btn btn-danger">
+    <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+  </a>
+</div>
+
+<!-- Info de roles -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 bg-danger bg-opacity-10 h-100">
+      <div class="card-body p-3">
+        <div class="fw-bold text-danger mb-1"><i class="bi bi-shield-fill-check me-2"></i>Administrador</div>
+        <p class="small text-muted mb-0">Acceso total: gestiona usuarios, configuración y todos los módulos.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 bg-primary bg-opacity-10 h-100">
+      <div class="card-body p-3">
+        <div class="fw-bold text-primary mb-1"><i class="bi bi-person-badge me-2"></i>Reclutador</div>
+        <p class="small text-muted mb-0">Gestiona vacantes, candidatos, entrevistas y evaluaciones.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 bg-info bg-opacity-10 h-100">
+      <div class="card-body p-3">
+        <div class="fw-bold text-info mb-1"><i class="bi bi-eye me-2"></i>Coordinador</div>
+        <p class="small text-muted mb-0">Solo lectura: ve reportes, pipeline y calendario. No puede crear ni eliminar.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-ats table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th class="ps-3">Usuario</th>
+            <th>Nombre Completo</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Último Ingreso</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td class="ps-3">
+              <div class="fw-semibold">
+                {{ u.username }}
+                {% if u.is_superuser %}
+                  <span class="badge bg-danger ms-1" style="font-size:.65rem;">SUPER</span>
+                {% endif %}
+                {% if u == request.user %}
+                  <span class="badge bg-secondary ms-1" style="font-size:.65rem;">Yo</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>{{ u.get_full_name|default:"—" }}</td>
+            <td class="text-muted small">{{ u.email|default:"—" }}</td>
+            <td>
+              {% if u.is_superuser %}
+                <span class="badge bg-danger">Administrador</span>
+              {% elif u.perfil %}
+                <span class="badge bg-{% if u.perfil.rol == 'admin' %}danger{% elif u.perfil.rol == 'reclutador' %}primary{% else %}info text-dark{% endif %}">
+                  {{ u.perfil.get_rol_display }}
+                </span>
+              {% else %}
+                <span class="badge bg-secondary">Sin rol</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-{% if u.is_active %}success{% else %}secondary{% endif %}">
+                {% if u.is_active %}Activo{% else %}Inactivo{% endif %}
+              </span>
+            </td>
+            <td class="text-muted small">
+              {{ u.last_login|date:"d/m/Y H:i"|default:"Nunca" }}
+            </td>
+            <td class="text-center">
+              {% if not u.is_superuser or request.user.is_superuser %}
+              <a href="{% url 'editar_usuario' u.pk %}"
+                 class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'resetear_contrasena' u.pk %}"
+                 class="btn btn-sm btn-outline-warning me-1" title="Cambiar contraseña">
+                <i class="bi bi-key"></i>
+              </a>
+              {% if u != request.user and not u.is_superuser %}
+              <a href="{% url 'eliminar_usuario' u.pk %}"
+                 class="btn btn-sm btn-outline-danger" title="Eliminar">
+                <i class="bi bi-trash"></i>
+              </a>
+              {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-muted">
+              No hay usuarios registrados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Instrucciones de credenciales -->
+<div class="alert alert-info mt-4">
+  <i class="bi bi-info-circle-fill me-2"></i>
+  <strong>¿Cómo dar acceso a un nuevo usuario?</strong>
+  Haz clic en <strong>Nuevo Usuario</strong>, define el nombre de usuario, contraseña y rol.
+  Luego comparte esas credenciales con la persona. Ella las usa en la pantalla de login.
+</div>
+{% endblock %}

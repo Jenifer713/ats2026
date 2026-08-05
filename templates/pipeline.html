@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Pipeline de Selección - ATS{% endblock %}
+{% block breadcrumb %}Herramientas / Pipeline{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pipeline-wrapper { overflow-x: auto; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1"><i class="bi bi-kanban text-primary me-2"></i>Pipeline de Selección</h4>
+    <p class="text-muted small mb-0">Arrastra candidatos entre columnas para avanzar en el proceso</p>
+  </div>
+  <a href="{% url 'crear_candidato' %}" class="btn btn-primary btn-sm">
+    <i class="bi bi-person-plus me-1"></i> Nuevo Candidato
+  </a>
+</div>
+
+<div id="pipeline-wrapper" class="pipeline-container">
+  {% for col in pipeline_data %}
+  <div class="pipeline-col" style="min-width:190px;">
+    <div class="pipeline-col-header bg-{{ col.color }} {% if col.color in 'dark,danger' %}text-white{% else %}text-dark{% endif %} bg-opacity-{% if col.color == 'dark' %}100{% else %}15{% endif %}">
+      <span>{{ col.nombre }}</span>
+      <span class="badge bg-white text-dark">{{ col.total }}</span>
+    </div>
+    <div class="pipeline-cards droppable" data-etapa="{{ col.codigo }}" style="min-height:300px;">
+      {% for candidato in col.candidatos %}
+      <div class="candidate-card draggable"
+           data-id="{{ candidato.pk }}"
+           data-nombre="{{ candidato.nombre_completo }}">
+        <div class="fw-semibold mb-1" style="font-size:.83rem;">{{ candidato.nombre_completo }}</div>
+        <div class="text-muted" style="font-size:.75rem;">
+          <i class="bi bi-briefcase me-1"></i>{{ candidato.vacante.titulo|truncatechars:25 }}
+        </div>
+        <div class="mt-2 d-flex gap-1">
+          <a href="{% url 'editar_candidato' candidato.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" style="font-size:.7rem;">
+            <i class="bi bi-pencil"></i>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Toast de confirmación de movimiento -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9000;">
+  <div id="pipelineToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="pipelineToastMsg">Candidato movido correctamente.</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function () {
+  const csrfToken = '{{ csrf_token }}';
+  const toast = new bootstrap.Toast(document.getElementById('pipelineToast'));
+
+  // Hacer cada candidato arrastrable
+  $('.draggable').draggable({
+    revert: 'invalid',
+    helper: 'clone',
+    zIndex: 1000,
+    cursor: 'grabbing',
+    opacity: 0.85,
+  });
+
+  // Hacer columnas receptoras (droppable)
+  $('.droppable').droppable({
+    accept: '.draggable',
+    classes: { 'ui-droppable-hover': 'ui-droppable-hover' },
+    drop: function (event, ui) {
+      const $card = ui.draggable;
+      const candidatoId = $card.data('id');
+      const nuevaEtapa = $(this).data('etapa');
+      const nombre = $card.data('nombre');
+
+      // Mover visualmente la tarjeta
+      $(this).append($card);
+      $card.css({ top: '', left: '' });
+
+      // Actualizar el contador de cada columna
+      $('.pipeline-col').each(function () {
+        const count = $(this).find('.draggable').length;
+        $(this).find('.badge').text(count);
+      });
+
+      // Llamada AJAX para persistir el cambio
+      $.ajax({
+        url: '{% url "actualizar_etapa_candidato" %}',
+        method: 'POST',
+        data: { candidato_id: candidatoId, etapa: nuevaEtapa, csrfmiddlewaretoken: csrfToken },
+        success: function (resp) {
+          if (resp.status === 'ok') {
+            document.getElementById('pipelineToastMsg').textContent =
+              `${nombre} movido a "${nuevaEtapa.charAt(0).toUpperCase() + nuevaEtapa.slice(1)}"`;
+            toast.show();
+          }
+        },
+        error: function () {
+          alert('Error al actualizar. Recarga la página.');
+        }
+      });
+    }
+  });
+});
+</script>
+{% endblock %}
