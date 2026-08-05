@@ -150,10 +150,11 @@ def enviar_candidato_aceptado(candidato, observaciones=""):
       Equipo de Reclutamiento — ATS Recluta
     </p>"""
     html = _html_base(f"¡Felicitaciones! Seleccionado/a — {candidato.vacante.titulo}", content, "#16a34a")
-    return _send(
+    _send_async(
         f"🎉 ¡Felicitaciones! Has sido seleccionado/a — {candidato.vacante.titulo}",
         candidato.correo, html
     )
+    return True
 
 
 # ─────────────────────────────────────────────────────────
@@ -181,10 +182,11 @@ def enviar_candidato_rechazado(candidato, observaciones=""):
       Equipo de Reclutamiento — ATS Recluta
     </p>"""
     html = _html_base(f"Resultado proceso — {candidato.vacante.titulo}", content, "#dc2626")
-    return _send(
+    _send_async(
         f"Resultado de tu proceso — {candidato.vacante.titulo}",
         candidato.correo, html
     )
+    return True
 
 
 # ─────────────────────────────────────────────────────────
@@ -220,7 +222,6 @@ def enviar_reporte_compartido(destinatario_email, destinatario_nombre,
         attachments=attachments if attachments else None
     )
 
-
 # ─────────────────────────────────────────────────────────
 # 5. Notificación de entrevista programada
 # ─────────────────────────────────────────────────────────
@@ -246,7 +247,8 @@ def enviar_notificacion_entrevista(candidato, entrevista):
       Equipo de Reclutamiento — ATS Recluta
     </p>"""
     html = _html_base(f"Entrevista programada — {candidato.vacante.titulo}", content, "#f59e0b")
-    return _send(
+    _send_async(
         f"📅 Entrevista programada — {candidato.vacante.titulo} ({fecha_str})",
         candidato.correo, html
     )
+    return True
