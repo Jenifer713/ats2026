@@ -128,7 +128,15 @@ def registro_publico(request):
             email=email,
             password=password1,
         )
-        PerfilUsuario.objects.create(user=user, rol='coordinador')
+        PerfilUsuario.objects.create(user=user, rol='candidato')
+
+        # Si ya existe un Candidato con ese correo, vincular la cuenta automáticamente
+        try:
+            candidato_existente = Candidato.objects.get(correo=email, user__isnull=True)
+            candidato_existente.user = user
+            candidato_existente.save(update_fields=['user'])
+        except Candidato.DoesNotExist:
+            pass
 
         # Enviar correo de bienvenida (no bloquea si falla)
         try:
@@ -1250,3 +1258,34 @@ def compartir_candidato(request, pk):
         messages.error(request, 'No se pudo enviar el correo. Verifica la configuración SMTP.')
 
     return redirect('detalle_candidato', pk=pk)
+
+
+# ═══════════════════════════════════════════════════════════════
+# MIS POSTULACIONES (vista para candidatos registrados)
+# ═══════════════════════════════════════════════════════════════
+@login_required
+def mis_postulaciones(request):
+    """
+    Vista exclusiva para usuarios con rol 'candidato'.
+    Muestra todas las postulaciones vinculadas a su cuenta o correo.
+    """
+    # Buscar candidatos por cuenta vinculada o por correo
+    candidatos = Candidato.objects.filter(
+        user=request.user
+    ).select_related('vacante').order_by('-fecha_registro')
+
+    # Si no tiene candidatos vinculados por FK, buscar por correo como fallback
+    if not candidatos.exists():
+        candidatos = Candidato.objects.filter(
+            correo=request.user.email
+        ).select_related('vacante').order_by('-fecha_registro')
+        # Vincular automáticamente los que no están vinculados
+        for c in candidatos:
+            if c.user is None:
+                c.user = request.user
+                c.save(update_fields=['user'])
+
+    return render(request, 'mis_postulaciones.html', {
+        'candidatos': candidatos,
+        'total': candidatos.count(),
+    })

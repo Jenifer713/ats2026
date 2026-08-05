@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Mis Postulaciones - ATS{% endblock %}
+{% block breadcrumb %}Mis Postulaciones{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+         style="width:56px;height:56px;">
+      <i class="bi bi-clipboard-check-fill text-primary fs-3"></i>
+    </div>
+    <div>
+      <h4 class="fw-bold mb-0">Mis Postulaciones</h4>
+      <p class="text-muted mb-0 small">Estado de tus procesos de selección</p>
+    </div>
+  </div>
+  <span class="badge bg-primary fs-6">{{ total }} postulación{{ total|pluralize:"es" }}</span>
+</div>
+
+{% if candidatos %}
+  <div class="row g-3">
+    {% for c in candidatos %}
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <!-- Etapa badge -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <span class="badge rounded-pill bg-{% if c.etapa_actual == 'contratado' %}dark{% elif c.etapa_actual == 'rechazado' %}danger{% elif c.etapa_actual == 'oferta' %}success{% elif c.etapa_actual == 'evaluacion' %}warning text-dark{% elif c.etapa_actual == 'entrevista' %}primary{% elif c.etapa_actual == 'preseleccion' %}info text-dark{% else %}secondary{% endif %} fs-6">
+              <i class="bi bi-{% if c.etapa_actual == 'contratado' %}check-circle{% elif c.etapa_actual == 'rechazado' %}x-circle{% elif c.etapa_actual == 'oferta' %}gift{% elif c.etapa_actual == 'evaluacion' %}clipboard-data{% elif c.etapa_actual == 'entrevista' %}camera-video{% elif c.etapa_actual == 'preseleccion' %}funnel{% else %}send{% endif %} me-1"></i>
+              {{ c.get_etapa_actual_display }}
+            </span>
+            <small class="text-muted">{{ c.fecha_registro|date:"d M Y" }}</small>
+          </div>
+
+          <!-- Vacante -->
+          <h6 class="fw-bold mb-1">{{ c.vacante.titulo }}</h6>
+          <p class="text-muted small mb-3">
+            <i class="bi bi-building me-1"></i>{{ c.vacante.get_departamento_display }}
+            &nbsp;·&nbsp;
+            <i class="bi bi-laptop me-1"></i>{{ c.vacante.get_modalidad_display }}
+          </p>
+
+          <!-- Progreso -->
+          {% with etapas="postulado preseleccion entrevista evaluacion oferta contratado" %}
+          {% with etapas_list=etapas.split %}
+          <div class="d-flex gap-1 mb-3 align-items-center">
+            {% for e in "postulado,preseleccion,entrevista,evaluacion,oferta,contratado"|split:"," %}
+              <div class="flex-fill rounded" style="height:6px;background:{% if e == c.etapa_actual %}var(--bs-primary){% elif c.etapa_actual == 'rechazado' %}#dc3545{% else %}#e9ecef{% endif %};"
+                   title="{{ e|capfirst }}"></div>
+            {% endfor %}
+          </div>
+          {% endwith %}
+          {% endwith %}
+
+          <!-- Estado -->
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{% if c.estado == 'activo' %}success-subtle text-success{% else %}secondary-subtle text-secondary{% endif %} border border-{% if c.estado == 'activo' %}success{% else %}secondary{% endif %}-subtle">
+              {{ c.get_estado_display }}
+            </span>
+          </div>
+
+          {% if c.etapa_actual == 'rechazado' %}
+          <div class="alert alert-danger border-0 py-2 px-3 mt-3 mb-0 small">
+            <i class="bi bi-info-circle me-1"></i>
+            Tu proceso en esta vacante ha concluido. Puedes postularte a otras oportunidades.
+          </div>
+          {% elif c.etapa_actual == 'contratado' %}
+          <div class="alert alert-success border-0 py-2 px-3 mt-3 mb-0 small">
+            <i class="bi bi-check-circle me-1"></i>
+            ¡Felicitaciones! Fuiste seleccionado/a para esta posición.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <!-- Sin postulaciones -->
+  <div class="text-center py-5">
+    <div class="mb-3">
+      <i class="bi bi-inbox text-muted" style="font-size:4rem;"></i>
+    </div>
+    <h5 class="text-muted fw-semibold">Todavía no tenés postulaciones registradas</h5>
+    <p class="text-muted small">
+      Cuando un reclutador registre tu candidatura aparecerá aquí el estado de tu proceso.
+    </p>
+    <a href="{% url 'inicio' %}" class="btn btn-primary mt-2">
+      <i class="bi bi-house me-1"></i> Volver al inicio
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}

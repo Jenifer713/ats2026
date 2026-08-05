@@ -74,6 +74,9 @@ urlpatterns = [
     # ─── Mi Perfil (todos los usuarios) ───
     path('mi-perfil/', views.mi_perfil, name='mi_perfil'),
 
+    # ─── Mis Postulaciones (candidatos) ───
+    path('mis-postulaciones/', views.mis_postulaciones, name='mis_postulaciones'),
+
     # ─── Compartir (correo) ───
     path('candidatos/<int:pk>/compartir/', views.compartir_candidato, name='compartir_candidato'),
 ]

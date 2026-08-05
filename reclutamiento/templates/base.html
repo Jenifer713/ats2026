@@ -108,6 +108,13 @@
       <i class="bi bi-person-circle"></i> Mi Perfil
     </a>
 
+    {% if rol_usuario == 'candidato' %}
+    <a href="{% url 'mis_postulaciones' %}" id="nav-postulaciones"
+       class="nav-link {% if request.resolver_match.url_name == 'mis_postulaciones' %}active{% endif %}">
+      <i class="bi bi-clipboard-check"></i> Mis Postulaciones
+    </a>
+    {% endif %}
+
     <!-- Logout requiere POST en Django 5+/6 para protección CSRF -->
     <form method="post" action="{% url 'logout' %}" id="logoutForm" class="m-0 p-0">
       {% csrf_token %}
@@ -144,6 +151,8 @@
           <span class="badge bg-primary ms-1" style="font-size:.65rem;">Reclutador</span>
         {% elif rol_usuario == 'coordinador' %}
           <span class="badge bg-info text-dark ms-1" style="font-size:.65rem;">Coordinador</span>
+        {% elif rol_usuario == 'candidato' %}
+          <span class="badge bg-success ms-1" style="font-size:.65rem;">Candidato</span>
         {% endif %}
       </a>
     </div>

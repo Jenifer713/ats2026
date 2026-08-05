@@ -25,6 +25,7 @@ class PerfilUsuario(models.Model):
         ('admin',        'Administrador'),
         ('reclutador',   'Reclutador'),
         ('coordinador',  'Coordinador'),
+        ('candidato',    'Candidato'),
     ]
 
     user = models.OneToOneField(
@@ -60,6 +61,9 @@ class PerfilUsuario(models.Model):
 
     def es_coordinador(self):
         return self.rol == 'coordinador'
+
+    def es_candidato(self):
+        return self.rol == 'candidato'
 
 
 # ─────────────────────────────────────────────
@@ -209,6 +213,14 @@ class Candidato(models.Model):
     cedula = models.CharField(max_length=20, unique=True, verbose_name='Cédula')
     correo = models.EmailField(verbose_name='Correo Electrónico')
     telefono = models.CharField(max_length=20, verbose_name='Teléfono')
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='candidato_perfil',
+        verbose_name='Cuenta de Usuario',
+    )
     hoja_de_vida = models.FileField(
         upload_to='hojas_de_vida/',
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
