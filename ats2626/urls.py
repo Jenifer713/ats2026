@@ -24,6 +24,16 @@ def serve_sw(request):
     return response
 
 
+def serve_manifest(request):
+    """Sirve el manifest desde /manifest.json con el content-type correcto."""
+    manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+    if not os.path.exists(manifest_path):
+        raise Http404
+    response = FileResponse(open(manifest_path, 'rb'), content_type='application/manifest+json')
+    response['Cache-Control'] = 'no-cache'
+    return response
+
+
 urlpatterns = [
     # Panel de administración de Django
     path('admin/', admin.site.urls),
@@ -33,8 +43,9 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('registro/', rec_views.registro_publico, name='registro'),
 
-    # PWA: Service Worker y página offline
+    # PWA: Service Worker, manifest y página offline
     path('sw.js', serve_sw, name='sw'),
+    path('manifest.json', serve_manifest, name='manifest'),
     path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
 
     # URLs de la aplicación de reclutamiento
