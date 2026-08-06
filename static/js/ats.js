@@ -35,10 +35,10 @@
   });
   overlay.addEventListener('click', closeSidebar);
 
-  // Cerrar sidebar al navegar (mobile)
+  // Cerrar sidebar al navegar (mobile/tablet)
   document.querySelectorAll('#sidebar .nav-link').forEach(function (link) {
     link.addEventListener('click', function () {
-      if (window.innerWidth < 768) closeSidebar();
+      if (window.innerWidth < 992) closeSidebar();
     });
   });
 })();

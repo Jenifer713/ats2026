@@ -20,7 +20,7 @@
     /* ── NAVBAR ── */
     .navbar-ats {
       background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 100%);
-      padding: 1rem 2rem;
+      padding: 1rem 1.5rem;
       position: sticky; top: 0; z-index: 100;
       box-shadow: 0 2px 20px rgba(0,0,0,.3);
     }
@@ -132,6 +132,19 @@
       padding: 1.5rem; text-align: center; font-size: .88rem;
     }
     footer a { color: var(--azul); text-decoration: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero { min-height: auto; padding: 2rem 0; }
+      .hero-title { font-size: clamp(1.6rem, 7vw, 2.5rem); }
+      .hero-sub { font-size: 1rem; }
+      .btn-hero-primary, .btn-hero-secondary { padding: .75rem 1.5rem; font-size: .95rem; }
+      .section-features, .section-pipeline, .section-roles, .section-cta { padding: 3rem 0; }
+      .pipeline-step::after { display: none; }
+      .pipeline-step { margin-bottom: .5rem; }
+      .stat-card { padding: 1rem; }
+      .stat-num { font-size: 1.8rem; }
+    }
   </style>
 </head>
 <body>

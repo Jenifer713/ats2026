@@ -409,8 +409,8 @@ body {
 .empty-state i { font-size: 3rem; opacity: .18; display: block; margin-bottom: .75rem; }
 .empty-state p { color: #9ca3af; font-size: .9rem; margin-bottom: 1rem; }
 
-/* ─── RESPONSIVE (Mobile) ────────────────────────────── */
-@media (max-width: 768px) {
+/* ─── RESPONSIVE (Tablet: 768px - 991px) ─────────────── */
+@media (min-width: 768px) and (max-width: 991px) {
   #sidebar {
     transform: translateX(-100%);
     box-shadow: none;
@@ -421,9 +421,55 @@ body {
   }
   #main-content { margin-left: 0; }
   .topbar { padding: 0 1rem; }
+}
+
+/* ─── RESPONSIVE (Mobile: < 768px) ──────────────────── */
+@media (max-width: 767px) {
+  #sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,.25);
+  }
+  #main-content { margin-left: 0; }
+  .topbar { padding: 0 1rem; }
+
+  /* Encabezados de página — apilar en móvil */
+  .page-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: .75rem !important;
+  }
+  .page-header-row .d-flex.gap-2 { flex-wrap: wrap; }
+
+  /* Pipeline */
   .pipeline-container { padding: .5rem; }
-  .candidate-card { min-width: 160px; }
-  .alert-fixed { right: .5rem; left: .5rem; min-width: unset; }
+  .pipeline-col { min-width: 160px !important; max-width: 175px; }
+  .candidate-card { min-width: 140px; }
+
+  /* Alertas */
+  .alert-fixed { right: .5rem; left: .5rem; min-width: unset; max-width: unset; }
+
+  /* Métrica cards — 2 columnas en móvil */
+  .metric-value { font-size: 1.5rem; }
+
+  /* Formularios */
+  .form-card { margin: 0 -.25rem; border-radius: 8px !important; }
+
+  /* Topbar: ocultar texto largo */
+  .topbar .fw-semibold.text-muted { display: none; }
+
+  /* Banner PWA más compacto */
+  #pwa-install-banner { padding: 10px 12px; }
+}
+
+/* ─── RESPONSIVE (XS: < 480px) ──────────────────────── */
+@media (max-width: 479px) {
+  main.p-4 { padding: 1rem !important; }
+  .metric-value { font-size: 1.3rem; }
+  h4.fw-bold { font-size: 1.1rem; }
 }
 
 /* ─── OVERLAY para sidebar mobile ───────────────────── */
