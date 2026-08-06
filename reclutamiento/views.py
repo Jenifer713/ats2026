@@ -1353,3 +1353,339 @@ def mis_postulaciones(request):
         'candidatos': candidatos,
         'total': candidatos.count(),
     })
+
+
+# ═══════════════════════════════════════════════════════════════
+# EXPORTAR REPORTE PDF
+# ═══════════════════════════════════════════════════════════════
+@login_required
+@solo_no_candidato
+def exportar_reporte_pdf(request):
+    """
+    Genera y descarga el reporte en PDF según el rol del usuario.
+    - admin/reclutador: reporte completo
+    - coordinador: solo candidatos y vacantes
+    """
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from io import BytesIO
+    from datetime import date as _date
+
+    rol = get_rol_usuario(request.user)
+    es_admin_rec = rol in ('admin', 'reclutador') or request.user.is_superuser
+    hoy = _date.today().strftime('%d/%m/%Y')
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=1.5*cm, leftMargin=1.5*cm,
+        topMargin=1.5*cm, bottomMargin=1.5*cm,
+        title='Reporte ATS Recluta',
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('title', parent=styles['Title'], fontSize=16, textColor=colors.HexColor('#0d6efd'), spaceAfter=4)
+    sub_style   = ParagraphStyle('sub', parent=styles['Normal'], fontSize=9, textColor=colors.grey, spaceAfter=12)
+    h2_style    = ParagraphStyle('h2', parent=styles['Heading2'], fontSize=11, textColor=colors.HexColor('#1a1d23'), spaceBefore=12, spaceAfter=4)
+    cell_style  = ParagraphStyle('cell', parent=styles['Normal'], fontSize=8)
+
+    header_bg  = colors.HexColor('#0d6efd')
+    alt_row    = colors.HexColor('#f0f4ff')
+    white      = colors.white
+
+    def make_table(headers, rows, col_widths=None):
+        data = [[Paragraph(f'<b>{h}</b>', ParagraphStyle('th', fontSize=8, textColor=white)) for h in headers]]
+        for i, row in enumerate(rows):
+            data.append([Paragraph(str(c), cell_style) for c in row])
+        t = Table(data, colWidths=col_widths, repeatRows=1)
+        style_cmds = [
+            ('BACKGROUND', (0,0), (-1,0), header_bg),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [white, alt_row]),
+            ('GRID', (0,0), (-1,-1), 0.25, colors.HexColor('#dee2e6')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ]
+        t.setStyle(TableStyle(style_cmds))
+        return t
+
+    story = []
+    story.append(Paragraph('ATS Recluta — Reporte de Reclutamiento', title_style))
+    story.append(Paragraph(f'Generado el {hoy}  ·  Rol: {rol.capitalize()}', sub_style))
+    story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#dee2e6'), spaceAfter=8))
+
+    # ── CANDIDATOS ──
+    story.append(Paragraph('Candidatos', h2_style))
+    cands = Candidato.objects.select_related('vacante').order_by('-fecha_registro')
+    rows = [(
+        c.nombre_completo,
+        c.cedula,
+        c.correo,
+        c.vacante.titulo if c.vacante else '—',
+        c.get_etapa_actual_display(),
+        c.get_estado_display(),
+        c.fecha_registro.strftime('%d/%m/%Y'),
+    ) for c in cands]
+    headers = ['Nombre', 'Cédula', 'Correo', 'Vacante', 'Etapa', 'Estado', 'Registro']
+    widths  = [4*cm, 2.5*cm, 5*cm, 5*cm, 2.5*cm, 2*cm, 2.5*cm]
+    story.append(make_table(headers, rows, widths))
+
+    # ── VACANTES ──
+    story.append(Spacer(1, 0.3*cm))
+    story.append(Paragraph('Vacantes', h2_style))
+    vacs = Vacante.objects.select_related('reclutador').order_by('-fecha_publicacion')
+    rows = [(
+        v.titulo,
+        v.get_departamento_display(),
+        v.get_modalidad_display(),
+        v.get_estado_display(),
+        str(v.salario),
+        v.reclutador.nombre_completo if v.reclutador else '—',
+        v.fecha_publicacion.strftime('%d/%m/%Y'),
+        v.fecha_cierre.strftime('%d/%m/%Y'),
+    ) for v in vacs]
+    headers = ['Título', 'Departamento', 'Modalidad', 'Estado', 'Salario', 'Reclutador', 'Apertura', 'Cierre']
+    widths  = [5*cm, 3*cm, 2.5*cm, 2*cm, 2.5*cm, 4*cm, 2.5*cm, 2.5*cm]
+    story.append(make_table(headers, rows, widths))
+
+    if es_admin_rec:
+        # ── ENTREVISTAS ──
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph('Entrevistas', h2_style))
+        ents = Entrevista.objects.select_related('candidato', 'reclutador').order_by('-fecha')
+        rows = [(
+            e.candidato.nombre_completo,
+            e.reclutador.nombre_completo,
+            e.fecha.strftime('%d/%m/%Y'),
+            str(e.hora_inicio),
+            str(e.hora_fin),
+            e.get_modalidad_display(),
+        ) for e in ents]
+        headers = ['Candidato', 'Reclutador', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Modalidad']
+        widths  = [5*cm, 5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm]
+        story.append(make_table(headers, rows, widths))
+
+        # ── EVALUACIONES ──
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph('Evaluaciones', h2_style))
+        evals = Evaluacion.objects.select_related('entrevista__candidato').order_by('-id')
+        rows = [(
+            ev.entrevista.candidato.nombre_completo,
+            ev.puntuacion,
+            ev.get_recomendacion_display(),
+            ev.comentario[:60] + ('...' if len(ev.comentario) > 60 else ''),
+        ) for ev in evals]
+        headers = ['Candidato', 'Puntuación', 'Recomendación', 'Comentario']
+        widths  = [5*cm, 2.5*cm, 3*cm, 12*cm]
+        story.append(make_table(headers, rows, widths))
+
+        # ── OFERTAS ──
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph('Ofertas', h2_style))
+        ofertas = Oferta.objects.select_related('candidato').order_by('-fecha')
+        rows = [(
+            o.candidato.nombre_completo,
+            o.cargo,
+            str(o.salario),
+            o.fecha.strftime('%d/%m/%Y'),
+            o.get_estado_display(),
+        ) for o in ofertas]
+        headers = ['Candidato', 'Cargo', 'Salario', 'Fecha', 'Estado']
+        widths  = [5*cm, 5*cm, 3*cm, 3*cm, 3*cm]
+        story.append(make_table(headers, rows, widths))
+
+    doc.build(story)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_ats_{_date.today().strftime("%Y%m%d")}.pdf"'
+    return response
+
+
+# ═══════════════════════════════════════════════════════════════
+# EXPORTAR REPORTE EXCEL
+# ═══════════════════════════════════════════════════════════════
+@login_required
+@solo_no_candidato
+def exportar_reporte_excel(request):
+    """
+    Genera y descarga el reporte en Excel según el rol del usuario.
+    - admin/reclutador: todas las hojas
+    - coordinador: solo Candidatos y Vacantes
+    """
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+    from datetime import date as _date
+
+    rol = get_rol_usuario(request.user)
+    es_admin_rec = rol in ('admin', 'reclutador') or request.user.is_superuser
+
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)  # quitar hoja default
+
+    HEADER_FILL   = PatternFill('solid', fgColor='0D6EFD')
+    HEADER_FONT   = Font(bold=True, color='FFFFFF', size=10)
+    ALT_FILL      = PatternFill('solid', fgColor='F0F4FF')
+    TITLE_FONT    = Font(bold=True, size=14, color='0D6EFD')
+    thin_border   = Border(
+        left=Side(style='thin', color='DEE2E6'),
+        right=Side(style='thin', color='DEE2E6'),
+        top=Side(style='thin', color='DEE2E6'),
+        bottom=Side(style='thin', color='DEE2E6'),
+    )
+
+    def add_sheet(title, headers, rows, col_widths=None):
+        ws = wb.create_sheet(title=title)
+        # Título de la hoja
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        ws.cell(1, 1).value = f'ATS Recluta — {title}'
+        ws.cell(1, 1).font = TITLE_FONT
+        ws.cell(1, 1).alignment = Alignment(horizontal='center')
+        ws.row_dimensions[1].height = 22
+
+        # Subtítulo fecha
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+        ws.cell(2, 1).value = f'Generado el {_date.today().strftime("%d/%m/%Y")}  ·  Rol: {rol.capitalize()}'
+        ws.cell(2, 1).font = Font(italic=True, size=9, color='6B7280')
+        ws.cell(2, 1).alignment = Alignment(horizontal='center')
+
+        # Encabezados
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(4, col_idx, header)
+            cell.font = HEADER_FONT
+            cell.fill = HEADER_FILL
+            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            cell.border = thin_border
+        ws.row_dimensions[4].height = 18
+
+        # Filas de datos
+        for row_idx, row in enumerate(rows, 5):
+            fill = ALT_FILL if row_idx % 2 == 0 else None
+            for col_idx, value in enumerate(row, 1):
+                cell = ws.cell(row_idx, col_idx, value)
+                cell.alignment = Alignment(vertical='center', wrap_text=True)
+                cell.border = thin_border
+                if fill:
+                    cell.fill = fill
+            ws.row_dimensions[row_idx].height = 15
+
+        # Anchos de columna
+        if col_widths:
+            for i, w in enumerate(col_widths, 1):
+                ws.column_dimensions[get_column_letter(i)].width = w
+        else:
+            for i, header in enumerate(headers, 1):
+                ws.column_dimensions[get_column_letter(i)].width = max(len(header) + 4, 12)
+
+        # Freeze header row
+        ws.freeze_panes = 'A5'
+        return ws
+
+    # ── CANDIDATOS ──
+    cands = Candidato.objects.select_related('vacante').order_by('-fecha_registro')
+    rows = [(
+        c.nombre_completo,
+        c.cedula,
+        c.correo,
+        c.telefono,
+        c.vacante.titulo if c.vacante else '—',
+        c.get_etapa_actual_display(),
+        c.get_estado_display(),
+        c.fecha_registro.strftime('%d/%m/%Y'),
+    ) for c in cands]
+    add_sheet('Candidatos',
+              ['Nombre', 'Cédula', 'Correo', 'Teléfono', 'Vacante', 'Etapa', 'Estado', 'Registro'],
+              rows, [28, 14, 32, 14, 28, 14, 12, 12])
+
+    # ── VACANTES ──
+    vacs = Vacante.objects.select_related('reclutador').order_by('-fecha_publicacion')
+    rows = [(
+        v.titulo,
+        v.get_departamento_display(),
+        v.get_modalidad_display(),
+        v.get_estado_display(),
+        float(v.salario),
+        v.reclutador.nombre_completo if v.reclutador else '—',
+        v.fecha_publicacion.strftime('%d/%m/%Y'),
+        v.fecha_cierre.strftime('%d/%m/%Y'),
+        v.candidatos.count(),
+    ) for v in vacs]
+    add_sheet('Vacantes',
+              ['Título', 'Departamento', 'Modalidad', 'Estado', 'Salario', 'Reclutador', 'Apertura', 'Cierre', 'Candidatos'],
+              rows, [30, 16, 14, 12, 14, 26, 12, 12, 12])
+
+    if es_admin_rec:
+        # ── ENTREVISTAS ──
+        ents = Entrevista.objects.select_related('candidato', 'reclutador').order_by('-fecha')
+        rows = [(
+            e.candidato.nombre_completo,
+            e.reclutador.nombre_completo,
+            e.fecha.strftime('%d/%m/%Y'),
+            str(e.hora_inicio),
+            str(e.hora_fin),
+            e.get_modalidad_display(),
+            e.observaciones or '',
+        ) for e in ents]
+        add_sheet('Entrevistas',
+                  ['Candidato', 'Reclutador', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Modalidad', 'Observaciones'],
+                  rows, [28, 26, 12, 12, 12, 14, 30])
+
+        # ── EVALUACIONES ──
+        evals = Evaluacion.objects.select_related('entrevista__candidato').order_by('-id')
+        rows = [(
+            ev.entrevista.candidato.nombre_completo,
+            ev.puntuacion,
+            ev.get_recomendacion_display(),
+            ev.comentario,
+        ) for ev in evals]
+        add_sheet('Evaluaciones',
+                  ['Candidato', 'Puntuación', 'Recomendación', 'Comentario'],
+                  rows, [28, 12, 16, 40])
+
+        # ── OFERTAS ──
+        ofertas = Oferta.objects.select_related('candidato').order_by('-fecha')
+        rows = [(
+            o.candidato.nombre_completo,
+            o.cargo,
+            float(o.salario),
+            o.fecha.strftime('%d/%m/%Y'),
+            o.get_estado_display(),
+            o.observaciones or '',
+        ) for o in ofertas]
+        add_sheet('Ofertas',
+                  ['Candidato', 'Cargo', 'Salario', 'Fecha', 'Estado', 'Observaciones'],
+                  rows, [28, 26, 14, 12, 14, 30])
+
+        # ── RECLUTADORES ──
+        recs = Reclutador.objects.all().order_by('apellidos')
+        rows = [(
+            r.nombre_completo,
+            r.correo,
+            r.telefono,
+            r.cargo,
+            r.get_estado_display(),
+            r.vacantes.count(),
+        ) for r in recs]
+        add_sheet('Reclutadores',
+                  ['Nombre', 'Correo', 'Teléfono', 'Cargo', 'Estado', 'Vacantes'],
+                  rows, [28, 32, 14, 20, 12, 10])
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="reporte_ats_{_date.today().strftime("%Y%m%d")}.xlsx"'
+    return response

@@ -63,6 +63,8 @@ urlpatterns = [
     # ─── Reportes ───
     path('reportes/', views.reportes, name='reportes'),
     path('reportes/compartir/', views.compartir_reporte, name='compartir_reporte'),
+    path('reportes/exportar/pdf/', views.exportar_reporte_pdf, name='exportar_reporte_pdf'),
+    path('reportes/exportar/excel/', views.exportar_reporte_excel, name='exportar_reporte_excel'),
 
     # ─── Usuarios y Roles (solo admin) ───
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
