@@ -1,0 +1,86 @@
+{
+  "name": "ATS Recluta",
+  "short_name": "ATS",
+  "description": "Sistema de Reclutamiento y Selección de Personal",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "lang": "es",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/static/img/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver el panel principal",
+      "url": "/dashboard/",
+      "icons": [{"src": "/static/img/icon-96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Candidatos",
+      "short_name": "Candidatos",
+      "description": "Gestionar candidatos",
+      "url": "/candidatos/",
+      "icons": [{"src": "/static/img/icon-96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Vacantes",
+      "short_name": "Vacantes",
+      "description": "Ver vacantes disponibles",
+      "url": "/vacantes/",
+      "icons": [{"src": "/static/img/icon-96.png", "sizes": "96x96"}]
+    }
+  ]
+}
