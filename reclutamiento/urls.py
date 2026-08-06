@@ -65,6 +65,7 @@ urlpatterns = [
     path('reportes/compartir/', views.compartir_reporte, name='compartir_reporte'),
     path('reportes/exportar/pdf/', views.exportar_reporte_pdf, name='exportar_reporte_pdf'),
     path('reportes/exportar/excel/', views.exportar_reporte_excel, name='exportar_reporte_excel'),
+    path('reportes/exportar/<str:tabla>/<str:formato>/', views.exportar_tabla, name='exportar_tabla'),
 
     # ─── Usuarios y Roles (solo admin) ───
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),

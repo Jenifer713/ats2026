@@ -1689,3 +1689,210 @@ def exportar_reporte_excel(request):
     )
     response['Content-Disposition'] = f'attachment; filename="reporte_ats_{_date.today().strftime("%Y%m%d")}.xlsx"'
     return response
+
+
+# ═══════════════════════════════════════════════════════════════
+# EXPORTAR TABLA INDIVIDUAL — PDF o Excel
+# ═══════════════════════════════════════════════════════════════
+@login_required
+@solo_no_candidato
+def exportar_tabla(request, tabla, formato):
+    """
+    Exporta una tabla específica en PDF o Excel.
+    tabla: reclutadores | vacantes | candidatos | entrevistas | evaluaciones | ofertas
+    formato: pdf | excel
+    Respeta permisos por rol.
+    """
+    from datetime import date as _date
+
+    rol = get_rol_usuario(request.user)
+    es_admin_rec = rol in ('admin', 'reclutador') or request.user.is_superuser
+
+    # Tablas restringidas a admin/reclutador
+    solo_admin = {'reclutadores', 'evaluaciones', 'ofertas'}
+    if tabla in solo_admin and not es_admin_rec:
+        messages.error(request, 'No tienes permiso para exportar esa sección.')
+        return redirect('reportes')
+
+    # ── Recopilar datos ──
+    titulo = tabla.capitalize()
+    headers = []
+    rows = []
+
+    if tabla == 'reclutadores':
+        headers = ['Nombre', 'Correo', 'Teléfono', 'Cargo', 'Estado', 'Vacantes']
+        for r in Reclutador.objects.all().order_by('apellidos'):
+            rows.append([r.nombre_completo, r.correo, r.telefono, r.cargo,
+                         r.get_estado_display(), r.vacantes.count()])
+
+    elif tabla == 'vacantes':
+        headers = ['Título', 'Departamento', 'Modalidad', 'Estado', 'Salario', 'Reclutador', 'Apertura', 'Cierre', 'Candidatos']
+        for v in Vacante.objects.select_related('reclutador').order_by('-fecha_publicacion'):
+            rows.append([v.titulo, v.get_departamento_display(), v.get_modalidad_display(),
+                         v.get_estado_display(), float(v.salario),
+                         v.reclutador.nombre_completo if v.reclutador else '—',
+                         v.fecha_publicacion.strftime('%d/%m/%Y'),
+                         v.fecha_cierre.strftime('%d/%m/%Y'),
+                         v.candidatos.count()])
+
+    elif tabla == 'candidatos':
+        headers = ['Nombre', 'Cédula', 'Correo', 'Teléfono', 'Vacante', 'Etapa', 'Estado', 'Registro']
+        for c in Candidato.objects.select_related('vacante').order_by('-fecha_registro'):
+            rows.append([c.nombre_completo, c.cedula, c.correo, c.telefono,
+                         c.vacante.titulo if c.vacante else '—',
+                         c.get_etapa_actual_display(), c.get_estado_display(),
+                         c.fecha_registro.strftime('%d/%m/%Y')])
+
+    elif tabla == 'entrevistas':
+        headers = ['Candidato', 'Reclutador', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Modalidad', 'Observaciones']
+        for e in Entrevista.objects.select_related('candidato', 'reclutador').order_by('-fecha'):
+            rows.append([e.candidato.nombre_completo, e.reclutador.nombre_completo,
+                         e.fecha.strftime('%d/%m/%Y'), str(e.hora_inicio), str(e.hora_fin),
+                         e.get_modalidad_display(), e.observaciones or ''])
+
+    elif tabla == 'evaluaciones':
+        headers = ['Candidato', 'Fecha Entrevista', 'Puntuación', 'Recomendación', 'Comentario']
+        for ev in Evaluacion.objects.select_related('entrevista__candidato').order_by('-id'):
+            rows.append([ev.entrevista.candidato.nombre_completo,
+                         ev.entrevista.fecha.strftime('%d/%m/%Y'),
+                         ev.puntuacion, ev.get_recomendacion_display(), ev.comentario])
+
+    elif tabla == 'ofertas':
+        headers = ['Candidato', 'Cargo', 'Salario', 'Fecha', 'Estado', 'Observaciones']
+        for o in Oferta.objects.select_related('candidato').order_by('-fecha'):
+            rows.append([o.candidato.nombre_completo, o.cargo, float(o.salario),
+                         o.fecha.strftime('%d/%m/%Y'), o.get_estado_display(),
+                         o.observaciones or ''])
+    else:
+        messages.error(request, 'Tabla no válida.')
+        return redirect('reportes')
+
+    hoy = _date.today()
+    nombre_archivo = f"{tabla}_ats_{hoy.strftime('%Y%m%d')}"
+
+    # ══════════════════ EXCEL ══════════════════
+    if formato == 'excel':
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        from io import BytesIO
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = titulo
+
+        HEADER_FILL = PatternFill('solid', fgColor='0D6EFD')
+        HEADER_FONT = Font(bold=True, color='FFFFFF', size=10)
+        ALT_FILL    = PatternFill('solid', fgColor='F0F4FF')
+        TITLE_FONT  = Font(bold=True, size=14, color='0D6EFD')
+        thin_border = Border(
+            left=Side(style='thin', color='DEE2E6'),
+            right=Side(style='thin', color='DEE2E6'),
+            top=Side(style='thin', color='DEE2E6'),
+            bottom=Side(style='thin', color='DEE2E6'),
+        )
+
+        # Título
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        ws.cell(1, 1).value = f'ATS Recluta — {titulo}'
+        ws.cell(1, 1).font = TITLE_FONT
+        ws.cell(1, 1).alignment = Alignment(horizontal='center')
+        ws.row_dimensions[1].height = 22
+
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+        ws.cell(2, 1).value = f'Generado el {hoy.strftime("%d/%m/%Y")}  ·  Rol: {rol.capitalize()}'
+        ws.cell(2, 1).font = Font(italic=True, size=9, color='6B7280')
+        ws.cell(2, 1).alignment = Alignment(horizontal='center')
+
+        for col_idx, h in enumerate(headers, 1):
+            cell = ws.cell(4, col_idx, h)
+            cell.font = HEADER_FONT
+            cell.fill = HEADER_FILL
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = thin_border
+        ws.row_dimensions[4].height = 18
+
+        for row_idx, row in enumerate(rows, 5):
+            fill = ALT_FILL if row_idx % 2 == 0 else None
+            for col_idx, val in enumerate(row, 1):
+                cell = ws.cell(row_idx, col_idx, val)
+                cell.alignment = Alignment(vertical='center', wrap_text=True)
+                cell.border = thin_border
+                if fill:
+                    cell.fill = fill
+            ws.row_dimensions[row_idx].height = 15
+
+        for i, h in enumerate(headers, 1):
+            ws.column_dimensions[get_column_letter(i)].width = max(len(h) + 6, 14)
+        ws.freeze_panes = 'A5'
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}.xlsx"'
+        return response
+
+    # ══════════════════ PDF ══════════════════
+    elif formato == 'pdf':
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+        from io import BytesIO
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, pagesize=landscape(A4),
+            rightMargin=1.5*cm, leftMargin=1.5*cm,
+            topMargin=1.5*cm, bottomMargin=1.5*cm,
+            title=f'Reporte {titulo} — ATS',
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('t', parent=styles['Title'], fontSize=15,
+                                     textColor=colors.HexColor('#0d6efd'), spaceAfter=2)
+        sub_style   = ParagraphStyle('s', parent=styles['Normal'], fontSize=9,
+                                     textColor=colors.grey, spaceAfter=10)
+        cell_style  = ParagraphStyle('c', parent=styles['Normal'], fontSize=8)
+
+        header_bg = colors.HexColor('#0d6efd')
+        alt_row   = colors.HexColor('#f0f4ff')
+
+        table_data = [[Paragraph(f'<b>{h}</b>',
+                       ParagraphStyle('th', fontSize=8, textColor=colors.white))
+                       for h in headers]]
+        for row in rows:
+            table_data.append([Paragraph(str(v), cell_style) for v in row])
+
+        col_w = (landscape(A4)[0] - 3*cm) / len(headers)
+        t = Table(table_data, colWidths=[col_w]*len(headers), repeatRows=1)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), header_bg),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, alt_row]),
+            ('GRID', (0,0), (-1,-1), 0.25, colors.HexColor('#dee2e6')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+            ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ]))
+
+        story = [
+            Paragraph(f'ATS Recluta — {titulo}', title_style),
+            Paragraph(f'Generado el {hoy.strftime("%d/%m/%Y")}  ·  Rol: {rol.capitalize()}', sub_style),
+            HRFlowable(width='100%', thickness=1, color=colors.HexColor('#dee2e6'), spaceAfter=8),
+            t,
+        ]
+        doc.build(story)
+        pdf = buffer.getvalue()
+        buffer.close()
+
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}.pdf"'
+        return response
+
+    messages.error(request, 'Formato no válido.')
+    return redirect('reportes')

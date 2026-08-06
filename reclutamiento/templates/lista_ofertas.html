@@ -8,9 +8,19 @@
     <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-text text-success me-2"></i>Ofertas Laborales</h4>
     <p class="text-muted small mb-0">Ofertas enviadas a candidatos seleccionados</p>
   </div>
-  <a href="{% url 'crear_oferta' %}" class="btn btn-success">
-    <i class="bi bi-plus-circle me-1"></i> Nueva Oferta
-  </a>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if rol_usuario == 'admin' or rol_usuario == 'reclutador' %}
+    <a href="{% url 'exportar_tabla' 'ofertas' 'excel' %}" class="btn btn-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i> Excel
+    </a>
+    <a href="{% url 'exportar_tabla' 'ofertas' 'pdf' %}" class="btn btn-danger btn-sm">
+      <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+    </a>
+    <a href="{% url 'crear_oferta' %}" class="btn btn-success btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> Nueva Oferta
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-3">
